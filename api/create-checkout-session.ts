@@ -41,6 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { artSessionId, vehicleInfo } = req.body;
 
+    // Determine base URL
+    const baseUrl = process.env.FRONTEND_URL 
+      || req.headers.origin 
+      || `https://${req.headers.host}`;
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -51,14 +56,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL || req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}&art=${artSessionId}`,
-      cancel_url: `${process.env.FRONTEND_URL || req.headers.origin}/?cancelled=true`,
+      success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}&art=${artSessionId || ''}`,
+      cancel_url: `${baseUrl}/?cancelled=true`,
       metadata: {
         artSessionId: artSessionId || '',
         vehicleInfo: vehicleInfo || '',
       },
-      // Optional: collect customer email
-      // customer_email: email,
     });
 
     return res.status(200).json({ 
