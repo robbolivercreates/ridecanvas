@@ -52,15 +52,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log('URLs debug:', { frontendUrl, origin, host, baseUrl });
 
-    // Build URLs
-    const successUrl = new URL(baseUrl);
-    successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
-    if (artSessionId) successUrl.searchParams.set('art', artSessionId);
-    
-    const cancelUrl = new URL(baseUrl);
-    cancelUrl.searchParams.set('cancelled', 'true');
+    // Build URLs - IMPORTANT: {CHECKOUT_SESSION_ID} must NOT be URL encoded
+    // Stripe replaces this placeholder with the actual session ID on redirect
+    const successUrl = `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}${artSessionId ? `&art=${encodeURIComponent(artSessionId)}` : ''}`;
+    const cancelUrl = `${baseUrl}/?cancelled=true`;
 
-    console.log('Stripe URLs:', { success: successUrl.toString(), cancel: cancelUrl.toString() });
+    console.log('Stripe URLs:', { success: successUrl, cancel: cancelUrl });
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -72,8 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
       mode: 'payment',
-      success_url: successUrl.toString(),
-      cancel_url: cancelUrl.toString(),
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         artSessionId: artSessionId || '',
         vehicleInfo: vehicleInfo || '',
