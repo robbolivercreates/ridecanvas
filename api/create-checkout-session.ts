@@ -52,6 +52,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log('URLs debug:', { frontendUrl, origin, host, baseUrl });
 
+    // Build URLs
+    const successUrl = new URL(baseUrl);
+    successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
+    if (artSessionId) successUrl.searchParams.set('art', artSessionId);
+    
+    const cancelUrl = new URL(baseUrl);
+    cancelUrl.searchParams.set('cancelled', 'true');
+
+    console.log('Stripe URLs:', { success: successUrl.toString(), cancel: cancelUrl.toString() });
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -62,8 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
       mode: 'payment',
-      success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}&art=${artSessionId || ''}`,
-      cancel_url: `${baseUrl}/?cancelled=true`,
+      success_url: successUrl.toString(),
+      cancel_url: cancelUrl.toString(),
       metadata: {
         artSessionId: artSessionId || '',
         vehicleInfo: vehicleInfo || '',
