@@ -41,23 +41,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { artSessionId, vehicleInfo } = req.body;
 
-    // Determine base URL - MUST be a valid URL
-    const frontendUrl = process.env.FRONTEND_URL;
-    const origin = req.headers.origin as string | undefined;
-    const host = req.headers.host;
+    // Determine base URL - use FRONTEND_URL or fallback to production URL
+    const baseUrl = process.env.FRONTEND_URL || 'https://overland-art-director.vercel.app';
     
-    const baseUrl = frontendUrl 
-      || origin 
-      || (host ? `https://${host}` : 'https://overland-art-director.vercel.app');
-    
-    console.log('URLs debug:', { frontendUrl, origin, host, baseUrl });
-
-    // Build URLs - IMPORTANT: {CHECKOUT_SESSION_ID} must NOT be URL encoded
-    // Stripe replaces this placeholder with the actual session ID on redirect
-    const successUrl = `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}${artSessionId ? `&art=${encodeURIComponent(artSessionId)}` : ''}`;
+    // Build URLs for Stripe
+    // Note: {CHECKOUT_SESSION_ID} is a Stripe template variable that gets replaced with actual session ID
+    const successUrl = `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/?cancelled=true`;
 
-    console.log('Stripe URLs:', { success: successUrl, cancel: cancelUrl });
+    console.log('Stripe config:', { baseUrl, successUrl, cancelUrl, artSessionId });
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
