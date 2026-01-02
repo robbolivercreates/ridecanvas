@@ -41,10 +41,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { artSessionId, vehicleInfo } = req.body;
 
-    // Determine base URL
-    const baseUrl = process.env.FRONTEND_URL 
-      || req.headers.origin 
-      || `https://${req.headers.host}`;
+    // Determine base URL - MUST be a valid URL
+    const frontendUrl = process.env.FRONTEND_URL;
+    const origin = req.headers.origin as string | undefined;
+    const host = req.headers.host;
+    
+    const baseUrl = frontendUrl 
+      || origin 
+      || (host ? `https://${host}` : 'https://overland-art-director.vercel.app');
+    
+    console.log('URLs debug:', { frontendUrl, origin, host, baseUrl });
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
