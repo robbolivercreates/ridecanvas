@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RideCanvas - Turn Your Ride Into Art</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              accent: '#D4AF37',
+              glass: {
+                bg: 'rgba(255, 255, 255, 0.04)',
+                border: 'rgba(255, 255, 255, 0.12)',
+                glow: 'rgba(255, 255, 255, 0.06)',
+              }
+            },
+            fontFamily: {
+              sans: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+              mono: ['SF Mono', 'Menlo', 'monospace'],
+            },
+            animation: {
+              'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+              'float': 'float 4s ease-in-out infinite',
+              'glow': 'glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              'pulse-soft': {
+                '0%, 100%': { opacity: '0.6' },
+                '50%': { opacity: '1' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-8px)' },
+              },
+              glow: {
+                '0%': { boxShadow: '0 0 20px rgba(212, 175, 55, 0.1)' },
+                '100%': { boxShadow: '0 0 40px rgba(212, 175, 55, 0.25)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      * { -webkit-font-smoothing: antialiased; }
+      
+      body {
+        background-color: #000000;
+        overflow-x: hidden;
+      }
+      
+      /* Apple Liquid Glass Effect */
+      .liquid-glass {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.08) 0%,
+          rgba(255, 255, 255, 0.02) 50%,
+          rgba(255, 255, 255, 0.05) 100%
+        );
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 
+          inset 0 1px 1px rgba(255, 255, 255, 0.1),
+          inset 0 -1px 1px rgba(0, 0, 0, 0.1),
+          0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      
+      .liquid-glass-subtle {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      
+      .liquid-glass-active {
+        background: linear-gradient(
+          135deg,
+          rgba(212, 175, 55, 0.15) 0%,
+          rgba(212, 175, 55, 0.05) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        box-shadow: 
+          inset 0 1px 1px rgba(255, 255, 255, 0.15),
+          0 0 30px rgba(212, 175, 55, 0.15);
+      }
+      
+      /* Specular highlight on top edge */
+      .specular-edge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        border-radius: 100%;
+      }
+      
+      /* Pill buttons */
+      .pill-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .pill-btn:active {
+        transform: scale(0.97);
+      }
+      
+      /* Scanning animation */
+      @keyframes scan {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
+      }
+      .animate-scan {
+        animation: scan 2s linear infinite;
+      }
+      
+      /* Selection */
+      ::selection {
+        background: rgba(212, 175, 55, 0.4);
+        color: white;
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="antialiased">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
