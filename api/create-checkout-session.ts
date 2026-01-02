@@ -1,8 +1,16 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Check if Stripe key is configured
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripePriceId = process.env.STRIPE_PRICE_ID;
+
+if (!stripeSecretKey) {
+  console.error('STRIPE_SECRET_KEY is not configured!');
+}
+
 // Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -21,6 +29,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Check configuration
+  if (!stripe || !stripePriceId) {
+    console.error('Missing config:', { hasStripe: !!stripe, hasPriceId: !!stripePriceId });
+    return res.status(500).json({ 
+      error: 'Payment service not configured',
+      debug: { hasStripeKey: !!stripeSecretKey, hasPriceId: !!stripePriceId }
+    });
+  }
+
   try {
     const { artSessionId, vehicleInfo } = req.body;
 
@@ -29,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID!, // price_1SlGsOIuMjOpjyE7PI4oF9Am
+          price: stripePriceId,
           quantity: 1,
         },
       ],
