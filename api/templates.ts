@@ -288,6 +288,25 @@ export function buildBasePrompt(params: GenerateArtParams): string {
 ${accessories}
 ${mods}
 
+═══════════════════════════════════════════════════════════
+⚠️ CRITICAL: DO NOT INVENT OR ADD OBJECTS ⚠️
+═══════════════════════════════════════════════════════════
+
+ONLY reproduce what is ACTUALLY VISIBLE in the source photo.
+
+DO NOT ADD:
+✗ Bicycles, kayaks, surfboards, or any cargo - unless CLEARLY visible in the source
+✗ People, animals, or figures
+✗ Additional gear or equipment not shown in the photo
+✗ Logos, text, or badges that don't exist in the source
+
+If you see an EMPTY rack (bike rack, roof rack, etc.), draw it EMPTY.
+If a rack has items attached, reproduce ONLY those exact items.
+
+The goal is FAITHFUL REPRODUCTION of the source vehicle, not creative interpretation.
+
+═══════════════════════════════════════════════════════════
+
 **STYLE:** High-Fidelity Technical Vector Art. Clean lines, matte cel-shading.
 ${style === 'Poster Art' ? 'Editorial Poster Art aesthetic.' : 'Vector Badge/Sticker aesthetic.'}
 Sharp vector paths, no photo textures. Premium wallpaper quality.
