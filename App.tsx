@@ -407,10 +407,11 @@ const App: React.FC = () => {
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === '1';
   
   // DEMO MODE - clean interface for recording content
-  // Works with ?demo=1 OR secret path /cx (for PWA installation)
+  // Works with ?demo=1 OR secret path /cx (for PWA installation) OR localStorage flag
   const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1' 
     || window.location.pathname === '/cx'
-    || window.location.pathname === '/cx/';
+    || window.location.pathname === '/cx/'
+    || localStorage.getItem('gc_demo_mode') === 'true';
 
   // Check for payment return on mount
   useEffect(() => {
