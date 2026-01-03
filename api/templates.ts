@@ -342,7 +342,7 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     composition: `
       PHONE WALLPAPER COMPOSITION - MODERN SMARTPHONE FORMAT:
       ═══════════════════════════════════════════════════════════
-      ⚠️ CRITICAL: SMALL CAR, BIG MARGINS ⚠️
+      ⚠️ CRITICAL REQUIREMENTS ⚠️
       ═══════════════════════════════════════════════════════════
       
       1. PURE ART ONLY - NO UI ELEMENTS:
@@ -350,31 +350,36 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
          ✗ DO NOT draw time, date, or any text overlays
          ✗ DO NOT simulate a phone screen or device frame
          
-      2. VEHICLE SIZE - MUST BE SMALL:
-         ═══════════════════════════════════════════════════════
-         THE CAR MUST LOOK SMALL - LIKE A TOY IN A VAST LANDSCAPE
-         ═══════════════════════════════════════════════════════
+      2. VEHICLE SIZE - THE CAR MUST BE SMALL:
+         ═══════════════════════════════════════════════════════════
+         ⚠️ THIS IS THE MOST IMPORTANT REQUIREMENT ⚠️
+         ═══════════════════════════════════════════════════════════
          
-         Imagine you are photographing the car from 100 METERS AWAY.
-         The car should look TINY compared to the scenery.
+         Think of it like this:
+         - Imagine photographing the car from 100 METERS AWAY
+         - The car should look like a TOY in a VAST landscape
+         - The SCENERY is the hero, the car is a small accent
          
-         SPACING RULE: Leave at least 2-3 CAR WIDTHS of empty space 
-         on EACH SIDE (left and right). The car should "float" in 
-         the center with GENEROUS EMPTY MARGINS all around.
+         SPACING RULES:
+         - Leave AT LEAST 2-3 car widths of EMPTY SPACE on the LEFT side
+         - Leave AT LEAST 2-3 car widths of EMPTY SPACE on the RIGHT side
+         - The car must NOT touch or nearly touch the image edges
+         - There should be MORE background than car
          
-         ❌ BAD: Car fills most of the width, edges nearly touching borders
-         ✅ GOOD: Car is small, lots of empty sky/ground/scenery around it
+         ❌ BAD: Car fills most of the width, barely any margin on sides
+         ✅ GOOD: Car is SMALL, floating in center with HUGE empty space around it
+         
+         If you're unsure, make the car SMALLER. It's better too small than too big.
          
       3. VEHICLE POSITION:
-         - PERFECTLY CENTERED vertically (50% from top)
-         - PERFECTLY CENTERED horizontally
-         - Equal empty space on ALL four sides
+         - Vertically: TRUE CENTER (exactly 50% from top)
+         - Horizontally: TRUE CENTER
+         - EQUAL generous space on ALL sides (top, bottom, left, right)
          
       4. COMPOSITION:
-         - The SCENERY is the hero, not the car
-         - Think: National Geographic landscape with a tiny vehicle
-         - Think: Epic movie poster where environment dominates
-         - The car is a small focal point in a grand scene
+         - Epic VAST landscape with tiny vehicle
+         - Background scenery should DOMINATE the image
+         - Think: drone shot from high altitude, or National Geographic landscape
          
       ═══════════════════════════════════════════════════════════
     `,
