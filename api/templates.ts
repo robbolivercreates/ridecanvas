@@ -342,27 +342,39 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     composition: `
       PHONE WALLPAPER COMPOSITION - MODERN SMARTPHONE FORMAT:
       ═══════════════════════════════════════════════════════════
-      ⚠️ CRITICAL REQUIREMENTS ⚠️
+      ⚠️ CRITICAL: SMALL CAR, BIG MARGINS ⚠️
       ═══════════════════════════════════════════════════════════
       
       1. PURE ART ONLY - NO UI ELEMENTS:
          ✗ DO NOT draw phone status bars, signal icons, battery indicators
          ✗ DO NOT draw time, date, or any text overlays
          ✗ DO NOT simulate a phone screen or device frame
-         ✗ The image must be PURE ARTWORK with NO interface elements
          
-      2. VEHICLE SIZE AND POSITION:
-         - Vehicle size: 30-35% of image WIDTH
-         - Vehicle position: TRUE CENTER (exactly 50% from top)
-         - The vehicle must be PERFECTLY CENTERED vertically
-         - EQUAL space above and below the vehicle
-         - This allows room for phone clock at top AND app dock at bottom
+      2. VEHICLE SIZE - MUST BE SMALL:
+         ═══════════════════════════════════════════════════════
+         THE CAR MUST LOOK SMALL - LIKE A TOY IN A VAST LANDSCAPE
+         ═══════════════════════════════════════════════════════
          
-      3. COMPOSITION:
-         - Epic landscape with the vehicle as a focal point
-         - PERFECTLY CENTERED - vehicle in the exact middle
-         - Generous margins on all sides (top, bottom, left, right)
-         - Think: poster with the subject floating in the center
+         Imagine you are photographing the car from 100 METERS AWAY.
+         The car should look TINY compared to the scenery.
+         
+         SPACING RULE: Leave at least 2-3 CAR WIDTHS of empty space 
+         on EACH SIDE (left and right). The car should "float" in 
+         the center with GENEROUS EMPTY MARGINS all around.
+         
+         ❌ BAD: Car fills most of the width, edges nearly touching borders
+         ✅ GOOD: Car is small, lots of empty sky/ground/scenery around it
+         
+      3. VEHICLE POSITION:
+         - PERFECTLY CENTERED vertically (50% from top)
+         - PERFECTLY CENTERED horizontally
+         - Equal empty space on ALL four sides
+         
+      4. COMPOSITION:
+         - The SCENERY is the hero, not the car
+         - Think: National Geographic landscape with a tiny vehicle
+         - Think: Epic movie poster where environment dominates
+         - The car is a small focal point in a grand scene
          
       ═══════════════════════════════════════════════════════════
     `,
