@@ -29,17 +29,59 @@ interface BeforeAfterSliderProps {
   afterImage: string;
   beforeLabel?: string;
   afterLabel?: string;
+  autoAnimate?: boolean;
 }
 
 const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ 
   beforeImage, 
   afterImage, 
   beforeLabel = 'Before',
-  afterLabel = 'After'
+  afterLabel = 'After',
+  autoAnimate = false
 }) => {
-  const [sliderPosition, setSliderPosition] = useState(50);
+  const [sliderPosition, setSliderPosition] = useState(autoAnimate ? 100 : 50);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-animate on mount: 100% → 50% (reveal the "After" image)
+  useEffect(() => {
+    if (autoAnimate && !hasAnimated) {
+      // Start from 100% (showing full "Before")
+      setSliderPosition(100);
+      
+      // After a brief pause, animate to 50%
+      const timer = setTimeout(() => {
+        const duration = 1500; // 1.5 seconds
+        const startPosition = 100;
+        const endPosition = 50;
+        const startTime = performance.now();
+        
+        const animate = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Ease-out cubic for smooth deceleration
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const newPosition = startPosition + (endPosition - startPosition) * eased;
+          
+          setSliderPosition(newPosition);
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            setHasAnimated(true);
+            setShowHint(true);
+          }
+        };
+        
+        requestAnimationFrame(animate);
+      }, 800); // Wait 800ms before starting animation
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoAnimate, hasAnimated]);
 
   const handleMove = (clientX: number) => {
     if (!containerRef.current) return;
@@ -47,10 +89,10 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
     const x = clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     setSliderPosition(percentage);
+    setShowHint(false); // Hide hint once user interacts
   };
 
   const handleMouseDown = () => setIsDragging(true);
-  const handleMouseUp = () => setIsDragging(false);
   
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) handleMove(e.clientX);
@@ -69,69 +111,218 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative aspect-[9/16] rounded-2xl overflow-hidden cursor-ew-resize select-none touch-pan-y"
+      className="relative aspect-[9/16] rounded-2xl overflow-hidden cursor-ew-resize select-none touch-pan-y bg-black"
       onMouseMove={handleMouseMove}
       onTouchMove={handleTouchMove}
     >
-      {/* After Image (full) */}
+      {/* After Image (full) - the generated art */}
       <img 
         src={`data:image/png;base64,${afterImage}`}
-        className="absolute inset-0 w-full h-full object-contain bg-black"
+        className="absolute inset-0 w-full h-full object-contain"
         alt="After"
         draggable={false}
       />
       
-      {/* Before Image (clipped) */}
+      {/* Before Image (clipped) - original photo with object-cover to fill */}
       <div 
-        className="absolute inset-0 overflow-hidden"
+        className="absolute inset-0 overflow-hidden transition-none"
         style={{ width: `${sliderPosition}%` }}
       >
         <img 
           src={`data:image/jpeg;base64,${beforeImage}`}
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ width: `${100 / (sliderPosition / 100)}%`, maxWidth: 'none' }}
+          style={{ 
+            width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%', 
+            maxWidth: 'none' 
+          }}
           alt="Before"
           draggable={false}
         />
+        {/* Gradient overlay on Before to blend edges */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/20" />
       </div>
       
-      {/* Slider Line */}
+      {/* Slider Line with glow effect */}
       <div 
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10"
-        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+        className="absolute top-0 bottom-0 w-0.5 bg-white z-10"
+        style={{ 
+          left: `${sliderPosition}%`, 
+          transform: 'translateX(-50%)',
+          boxShadow: '0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.3)'
+        }}
       >
         {/* Slider Handle */}
         <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-2xl flex items-center justify-center cursor-grab active:cursor-grabbing border-4 border-white/20"
+          style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.3)' }}
           onMouseDown={handleMouseDown}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
         >
-          <div className="flex items-center gap-1 text-black">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-0.5 text-black">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
             </svg>
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
           </div>
         </div>
       </div>
       
-      {/* Labels */}
-      <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full text-xs font-medium text-white/80">
+      {/* Labels with fade-in animation */}
+      <div className={`absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md rounded-full text-xs font-semibold text-white transition-opacity duration-500 ${sliderPosition > 10 ? 'opacity-100' : 'opacity-0'}`}>
         {beforeLabel}
       </div>
-      <div className="absolute top-4 right-4 px-3 py-1.5 bg-amber-500/90 backdrop-blur-sm rounded-full text-xs font-bold text-black">
-        {afterLabel}
+      <div className={`absolute top-4 right-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 backdrop-blur-md rounded-full text-xs font-bold text-black shadow-lg transition-opacity duration-500 ${sliderPosition < 90 ? 'opacity-100' : 'opacity-0'}`}>
+        ✨ {afterLabel}
       </div>
       
-      {/* Drag hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white/60 flex items-center gap-2 animate-pulse">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-        </svg>
-        Drag to compare
+      {/* Drag hint - only shows after animation */}
+      {showHint && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full text-xs text-white/80 flex items-center gap-2 animate-pulse">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+          </svg>
+          Drag to compare
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============ GENERATING SCREEN COMPONENT ============
+interface GeneratingScreenProps {
+  imageBase64: string | null;
+  analysis: VehicleAnalysis | null;
+  statusMessage: string;
+  background: BackgroundTheme;
+  position: PositionMode;
+  selectedMods: string[];
+}
+
+const GeneratingScreen: React.FC<GeneratingScreenProps> = ({
+  imageBase64,
+  analysis,
+  statusMessage,
+  background,
+  position,
+  selectedMods
+}) => {
+  const [revealStep, setRevealStep] = useState(0);
+
+  // Progressive reveal of info
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setRevealStep(1), 400),   // Vehicle
+      setTimeout(() => setRevealStep(2), 900),   // Details
+      setTimeout(() => setRevealStep(3), 1400),  // Settings
+      setTimeout(() => setRevealStep(4), 1900),  // Rendering
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const getBackgroundName = (bg: BackgroundTheme) => {
+    const names: Record<BackgroundTheme, string> = {
+      [BackgroundTheme.SOLID]: 'Studio',
+      [BackgroundTheme.MOUNTAINS]: 'Mountains',
+      [BackgroundTheme.FOREST]: 'Forest',
+      [BackgroundTheme.DESERT]: 'Desert',
+      [BackgroundTheme.CITY]: 'Urban',
+      [BackgroundTheme.NEON]: 'Neon',
+      [BackgroundTheme.GRADIENT]: 'Gradient',
+      [BackgroundTheme.TOPO]: 'Topographic',
+      [BackgroundTheme.GARAGE]: 'Garage',
+    };
+    return names[bg] || 'Custom';
+  };
+
+  const InfoLine = ({ visible, children, isLoading = false }: { visible: boolean; children: React.ReactNode; isLoading?: boolean }) => (
+    <div 
+      className={`flex items-center gap-2 py-1.5 transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+    >
+      {isLoading ? (
+        <div className="w-4 h-4 rounded-full border-2 border-zinc-700 border-t-amber-500 animate-spin" />
+      ) : (
+        <Check size={14} className="text-amber-500 flex-shrink-0" />
+      )}
+      <span className={`text-sm ${isLoading ? 'text-zinc-400' : 'text-white/80'}`}>{children}</span>
+    </div>
+  );
+
+  return (
+    <div className="pt-4">
+      {/* Preview of original image with overlay */}
+      {imageBase64 && (
+        <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-6 bg-zinc-900">
+          <img 
+            src={`data:image/jpeg;base64,${imageBase64}`}
+            className="w-full h-full object-cover opacity-50"
+            alt="Your vehicle"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+          
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-orange-500/10 animate-pulse" />
+          
+          {/* Center spinner */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full border-4 border-zinc-800/50 border-t-amber-500 animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles size={24} className="text-amber-500 animate-pulse" />
+              </div>
+            </div>
+          </div>
+          
+          {/* Corner brackets */}
+          <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-amber-500/50" />
+          <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-amber-500/50" />
+          <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-amber-500/50" />
+          <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-amber-500/50" />
+        </div>
+      )}
+      
+      {/* Title */}
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-bold text-white mb-1">Creating your masterpiece</h2>
+        <p className="text-sm text-zinc-500">{statusMessage || 'This usually takes 10-15 seconds'}</p>
+      </div>
+      
+      {/* Progressive info reveal */}
+      <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+        <InfoLine visible={revealStep >= 1}>
+          {analysis?.year} {analysis?.make} {analysis?.model}
+        </InfoLine>
+        
+        <InfoLine visible={revealStep >= 2}>
+          {analysis?.color} • {analysis?.isOffroad ? '4×4 Off-Road' : analysis?.category}
+        </InfoLine>
+        
+        <InfoLine visible={revealStep >= 3}>
+          {getBackgroundName(background)} backdrop • {position === PositionMode.SIDE_PROFILE ? 'Side profile' : 'Original angle'}
+        </InfoLine>
+
+        {selectedMods.length > 0 && (
+          <InfoLine visible={revealStep >= 3}>
+            +{selectedMods.length} virtual mod{selectedMods.length > 1 ? 's' : ''}
+          </InfoLine>
+        )}
+
+        {analysis?.installedAccessories && analysis.installedAccessories.length > 0 && (
+          <InfoLine visible={revealStep >= 2}>
+            {analysis.installedAccessories.slice(0, 2).join(' • ')}
+          </InfoLine>
+        )}
+        
+        <div className="mt-3 pt-3 border-t border-zinc-800/50">
+          <InfoLine visible={revealStep >= 4} isLoading={true}>
+            Rendering in 4K resolution...
+          </InfoLine>
+        </div>
       </div>
     </div>
   );
@@ -819,10 +1010,14 @@ const App: React.FC = () => {
 
         {/* ============ GENERATING ============ */}
         {step === Step.GENERATING && (
-          <div className="pt-32 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-zinc-800 border-t-amber-500 animate-spin" />
-            <p className="text-zinc-400">{statusMessage}</p>
-          </div>
+          <GeneratingScreen 
+            imageBase64={imageBase64}
+            analysis={analysis}
+            statusMessage={statusMessage}
+            background={background}
+            position={position}
+            selectedMods={selectedMods}
+          />
         )}
 
         {/* ============ PREVIEW ============ */}
@@ -840,13 +1035,14 @@ const App: React.FC = () => {
                   </p>
                 </div>
                 
-                {/* Before/After Slider */}
+                {/* Before/After Slider with auto-animation */}
                 <div className="mb-5">
                   <BeforeAfterSlider 
                     beforeImage={imageBase64}
                     afterImage={previewArt}
                     beforeLabel="Original"
                     afterLabel="Art"
+                    autoAnimate={true}
                   />
                 </div>
                 
