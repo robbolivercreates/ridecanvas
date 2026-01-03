@@ -69,6 +69,15 @@ export interface PopularWheel {
   style: string;
 }
 
+export interface WheelAudit {
+  hasWhiteLettering: boolean;
+  hasCenterCaps: boolean;
+  centerCapColor: string;
+  wheelColor: string;
+  wheelFinish: string;
+  wheelType: string;
+}
+
 export interface VehicleAnalysis {
   make: string;
   model: string;
@@ -85,6 +94,7 @@ export interface VehicleAnalysis {
     windowLayout: string;
     frontDetail: string;
   };
+  wheelAudit?: WheelAudit;
   visualFeatures: {
     roofGear: string;
     wheelStyle: string;
@@ -118,7 +128,27 @@ Act as an Expert Automotive Analyst and Car Culture Specialist. Analyze this veh
 
 5. **Geometry Audit:** Silhouette, Window Layout, Lights, Bumpers.
 
-6. **INSTALLED ACCESSORIES (CRITICAL):** List EVERY visible accessory and modification installed on this specific vehicle. Be extremely thorough:
+6. **WHEEL & TIRE AUDIT (CRITICAL - BE EXTREMELY PRECISE):**
+   Look VERY carefully at the wheels and tires. Answer these questions with what you ACTUALLY SEE:
+   
+   - hasWhiteLettering: Do the tires have WHITE LETTERS on the sidewall? (true/false)
+     * Look for brand names like "BFGoodrich", "Cooper", "Goodyear" in white
+     * If NO white text is visible on the tire sidewall → false
+     * If you see white text/letters on the tire → true
+   
+   - hasCenterCaps: Are there center caps visible on the wheels? (true/false)
+   
+   - centerCapColor: If center caps exist, what color are they? ("black", "silver", "body-color", "chrome", "none visible")
+   
+   - wheelColor: What is the main color of the wheels? ("black", "silver", "gray", "bronze", "white", "body-color", "chrome")
+   
+   - wheelFinish: What is the wheel finish? ("matte", "gloss", "machined", "polished")
+   
+   - wheelType: Are these stock or aftermarket? ("stock OEM", "aftermarket alloy", "steel wheels", "unknown")
+   
+   BE HONEST: If you cannot clearly see a detail, say "not visible" rather than guessing.
+
+7. **INSTALLED ACCESSORIES (CRITICAL):** List EVERY visible accessory and modification installed on this specific vehicle. Be extremely thorough:
    - Roof: roof rack, roof box, rooftop tent, awning, light bars, antennas
    - Exterior: mudguards/mud flaps, fender flares, side steps, running boards, rock sliders
    - Front: bull bar, nudge bar, winch, auxiliary lights, skid plate
@@ -127,17 +157,17 @@ Act as an Expert Automotive Analyst and Car Culture Specialist. Analyze this veh
    - Other: snorkel, jerry cans, recovery boards, decals, stickers, badges
    ONLY list what you can ACTUALLY SEE. Do not assume or guess.
 
-7. **Character Marks:** Unique identifiers: stickers, decals, brand logos, mud splashes, dirt patterns, scratches.
+8. **Character Marks:** Unique identifiers: stickers, decals, brand logos, mud splashes, dirt patterns, scratches.
 
-8. **Popular Modifications:** Use Google Search to find what enthusiasts commonly do to customize this specific make/model. List 4-5 popular mods.
+9. **Popular Modifications:** Use Google Search to find what enthusiasts commonly do to customize this specific make/model. List 4-5 popular mods.
 
-9. **Popular Wheels:** Use Google Search to find the most popular aftermarket wheel brands/styles that enthusiasts put on this specific make/model. List 2-3 popular wheel options with brand and style.
+10. **Popular Wheels:** Use Google Search to find the most popular aftermarket wheel brands/styles that enthusiasts put on this specific make/model. List 2-3 popular wheel options with brand and style.
 
-10. **Suggested Stance:** Based on the vehicle category:
+11. **Suggested Stance:** Based on the vehicle category:
     - For Off-Road vehicles: suggest "Stock", "Lifted + AT", or "Steelies + Mud"
     - For other vehicles: suggest "Stock" or "Lowered + Wheels"
 
-11. **Suggested Background:** Based on the vehicle type, suggest the best background theme.
+12. **Suggested Background:** Based on the vehicle type, suggest the best background theme.
 
 Return JSON.
 `;
@@ -172,6 +202,36 @@ export const ANALYZE_VEHICLE_SCHEMA = {
         bodyShape: { type: "STRING" as const },
         windowLayout: { type: "STRING" as const },
         frontDetail: { type: "STRING" as const },
+      }
+    },
+    wheelAudit: {
+      type: "OBJECT" as const,
+      description: "Detailed audit of wheels and tires - BE PRECISE about what is actually visible",
+      properties: {
+        hasWhiteLettering: { 
+          type: "BOOLEAN" as const,
+          description: "TRUE if white letters/text are visible on tire sidewalls, FALSE if not"
+        },
+        hasCenterCaps: { 
+          type: "BOOLEAN" as const,
+          description: "TRUE if center caps are visible on wheels"
+        },
+        centerCapColor: { 
+          type: "STRING" as const,
+          description: "Color of center caps if visible (black, silver, chrome, body-color, none visible)"
+        },
+        wheelColor: { 
+          type: "STRING" as const,
+          description: "Main color of the wheels (black, silver, gray, bronze, white, chrome)"
+        },
+        wheelFinish: { 
+          type: "STRING" as const,
+          description: "Wheel finish (matte, gloss, machined, polished)"
+        },
+        wheelType: { 
+          type: "STRING" as const,
+          description: "Type of wheels (stock OEM, aftermarket alloy, steel wheels, unknown)"
+        },
       }
     },
     visualFeatures: {
@@ -279,6 +339,23 @@ export function buildBasePrompt(params: GenerateArtParams): string {
     ? `ADD VIRTUAL MODS: ${selectedMods.join(", ")}`
     : "";
 
+  // Build wheel audit instructions based on analysis
+  const wheelAudit = analysis.wheelAudit;
+  const wheelInstructions = wheelAudit ? `
+═══════════════════════════════════════════════════════════
+🔍 WHEEL & TIRE AUDIT - FOLLOW EXACTLY:
+═══════════════════════════════════════════════════════════
+${wheelAudit.hasWhiteLettering 
+    ? '✅ TIRE LETTERING: YES - Include white letters on tire sidewalls as seen in source' 
+    : '🚫 TIRE LETTERING: NO - DO NOT add any white letters on tires! Keep sidewalls plain black.'}
+${wheelAudit.hasCenterCaps 
+    ? `✅ CENTER CAPS: YES - Include ${wheelAudit.centerCapColor} center caps` 
+    : '🚫 CENTER CAPS: NO or not visible - Do not add center caps'}
+✅ WHEEL COLOR: ${wheelAudit.wheelColor} with ${wheelAudit.wheelFinish} finish
+✅ WHEEL TYPE: ${wheelAudit.wheelType}
+═══════════════════════════════════════════════════════════
+` : '';
+
   return `
 **VEHICLE:** ${analysis.year} ${analysis.make} ${analysis.model} (${analysis.color})
 **POSITION:** ${positionInstructions}
@@ -287,7 +364,7 @@ export function buildBasePrompt(params: GenerateArtParams): string {
 **SCENE:** ${BACKGROUND_PROMPTS[background] || BACKGROUND_PROMPTS['Mountain Peaks']}
 ${accessories}
 ${mods}
-
+${wheelInstructions}
 ═══════════════════════════════════════════════════════════
 ⚠️ CRITICAL: 100% FAITHFUL REPRODUCTION ⚠️
 ═══════════════════════════════════════════════════════════
@@ -296,8 +373,9 @@ GOLDEN RULE: "If it's in the photo, include it. If it's NOT in the photo, DON'T 
 
 REPRODUCE EXACTLY:
 ✓ WHEELS: Copy the exact wheel design, color, and style from the source
-  - NO white lettering on tires unless clearly visible in source
-  - NO colored center caps unless visible in source
+  - Follow the WHEEL & TIRE AUDIT above EXACTLY
+  - NO white lettering on tires unless WHEEL AUDIT says YES
+  - NO colored center caps unless WHEEL AUDIT says YES
   - NO aftermarket wheel style if source has stock wheels
 ✓ DIRT/MUD: Same amount and intensity as source - don't exaggerate or minimize
 ✓ TEXT/LOGOS: Reproduce exactly as shown (e.g., "BEACH", "California", badges)
@@ -306,7 +384,7 @@ REPRODUCE EXACTLY:
 ✓ COLORS: Exact vehicle colors from source
 
 DO NOT INVENT:
-✗ White sidewall lettering on tires (common AI mistake!)
+✗ White sidewall lettering on tires (unless WHEEL AUDIT explicitly says YES!)
 ✗ Red/colored wheel center caps that don't exist
 ✗ Extra dirt, mud, or scratches beyond what's shown
 ✗ Bicycles, cargo, or items not in the source

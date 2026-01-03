@@ -87,6 +87,16 @@ export interface PopularWheel {
   style: string;
 }
 
+// Wheel & Tire Audit - detailed inspection of wheels/tires
+export interface WheelAudit {
+  hasWhiteLettering: boolean;   // Does tire have white sidewall letters?
+  hasCenterCaps: boolean;       // Are center caps visible?
+  centerCapColor: string;       // Color of center caps (if visible)
+  wheelColor: string;           // Main wheel color
+  wheelFinish: string;          // matte, gloss, machined, polished
+  wheelType: string;            // stock OEM, aftermarket alloy, steel wheels
+}
+
 export interface VehicleAnalysis {
   make: string;
   model: string;
@@ -103,6 +113,7 @@ export interface VehicleAnalysis {
     windowLayout: string;
     frontDetail: string;
   };
+  wheelAudit?: WheelAudit;  // Detailed wheel/tire inspection
   visualFeatures: {
     roofGear: string;
     wheelStyle: string;
