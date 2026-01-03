@@ -727,7 +727,10 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-black text-white">
       
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
+      <header 
+        className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -748,7 +751,10 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pt-14 pb-8 px-4 max-w-lg mx-auto">
+      <main 
+        className="pb-8 px-4 max-w-lg mx-auto"
+        style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' }}
+      >
         
         {/* ============ UPLOAD ============ */}
         {step === Step.UPLOAD && (
@@ -758,10 +764,10 @@ const App: React.FC = () => {
               <p className="text-zinc-500 text-sm">Side views look best. Any angle works.</p>
             </div>
             
-            <label className="block aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 transition-all cursor-pointer bg-zinc-900/30 hover:bg-zinc-900/50 flex flex-col items-center justify-center group">
+            <label className="block aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 transition-all cursor-pointer bg-zinc-900/30 hover:bg-zinc-900/50 flex flex-col items-center justify-center group btn-press active:scale-[0.98] active:bg-zinc-900/70">
               <input type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleFile} />
-              <div className="w-16 h-16 rounded-2xl bg-zinc-800 group-hover:bg-amber-500/20 flex items-center justify-center mb-4 transition-colors">
-                <Upload size={28} className="text-zinc-500 group-hover:text-amber-500 transition-colors" />
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800 group-hover:bg-amber-500/20 group-active:bg-amber-500/30 flex items-center justify-center mb-4 transition-colors">
+                <Upload size={28} className="text-zinc-500 group-hover:text-amber-500 group-active:text-amber-400 transition-colors" />
               </div>
               <span className="text-zinc-300 font-medium">Tap to upload</span>
               <span className="text-zinc-600 text-sm mt-1">JPG, PNG, HEIC</span>
@@ -1039,7 +1045,7 @@ const App: React.FC = () => {
             {/* Generate Button */}
             <button 
               onClick={handleGenerate}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
             >
               <Sparkles size={20} />
               Create Art
@@ -1101,7 +1107,7 @@ const App: React.FC = () => {
                     link.download = `GarageCanvas-${analysis.make}-${analysis.model}.${extension}`;
                     link.click();
                   }}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
                 >
                   <Download size={20} />
                   Download
@@ -1171,7 +1177,7 @@ const App: React.FC = () => {
                   <button 
                     onClick={handlePurchase}
                     disabled={isProcessingPayment}
-                    className="w-full py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-white text-black font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed btn-press active:scale-95 active:bg-zinc-200"
                   >
                     {isProcessingPayment ? (
                       <div className="w-5 h-5 border-2 border-zinc-300 border-t-black rounded-full animate-spin" />
@@ -1244,7 +1250,7 @@ const App: React.FC = () => {
             <button 
               onClick={handleDownloadZip}
               disabled={isDownloading}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-3 mb-4 disabled:opacity-50"
+              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl flex items-center justify-center gap-3 mb-4 disabled:opacity-50 btn-primary-press active:scale-95"
             >
               {isDownloading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -235,10 +235,27 @@
         -webkit-tap-highlight-color: rgba(212, 175, 55, 0.2);
       }
       
-      /* Smooth button press animation */
+      /* Smooth button press animation - Enhanced for iOS */
+      .btn-press {
+        transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+                    opacity 0.15s ease,
+                    box-shadow 0.15s ease;
+      }
       .btn-press:active {
-        transform: scale(0.97);
-        transition: transform 0.1s ease;
+        transform: scale(0.95);
+        opacity: 0.85;
+      }
+      
+      /* Primary action button press */
+      .btn-primary-press {
+        transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), 
+                    box-shadow 0.12s ease,
+                    filter 0.12s ease;
+      }
+      .btn-primary-press:active {
+        transform: scale(0.96);
+        filter: brightness(0.9);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
       }
       
       /* Bounce animation for success states */
