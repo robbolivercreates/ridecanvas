@@ -331,21 +331,27 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     composition: `
       PHONE WALLPAPER COMPOSITION - EPIC LANDSCAPE STYLE:
       ═══════════════════════════════════════════════════════════
-      ⚠️ THE VEHICLE MUST BE SMALL - THIS IS CRITICAL ⚠️
+      ⚠️ CRITICAL REQUIREMENTS ⚠️
       ═══════════════════════════════════════════════════════════
       
-      Think: National Geographic landscape photo with a tiny vehicle in the distance.
-      Think: Photography from 80-100 meters away.
-      Think: Epic adventure poster where the SCENERY is the hero.
-      
-      VEHICLE SIZE: Maximum 25-28% of image WIDTH (small!)
-      VEHICLE POSITION: Center-lower area (55-60% down from top)
-      
-      The vehicle should feel like a small object in a VAST landscape.
-      Lots of sky above for phone clock, widgets, and notch.
-      The background/scenery should dominate the composition.
-      
-      This creates dramatic wallpaper with room for phone UI elements.
+      1. PURE ART ONLY - NO UI ELEMENTS:
+         ✗ DO NOT draw phone status bars, signal icons, battery indicators
+         ✗ DO NOT draw time, date, or any text overlays
+         ✗ DO NOT simulate a phone screen or device frame
+         ✗ The image must be PURE ARTWORK with NO interface elements
+         
+      2. VEHICLE SIZE AND POSITION:
+         - Vehicle size: 25-30% of image WIDTH (relatively small)
+         - Vehicle position: CENTER of the image (around 50% from top)
+         - NOT too low - keep it centered, slightly above middle
+         - Leave sky/space above AND below the vehicle
+         
+      3. COMPOSITION:
+         - Epic landscape with the vehicle as a focal point
+         - Balanced composition - vehicle centered vertically
+         - Dramatic scenery surrounding the vehicle
+         - Think: adventure poster, NOT a phone mockup
+         
       ═══════════════════════════════════════════════════════════
     `,
     resolution: "2160x3840 (4K vertical - Ultra HD quality)"
