@@ -5,7 +5,9 @@ import {
   RefreshCw, Mountain, Building2, Sparkles, Car,
   Smartphone, Monitor, Trees, Sun, Layers, Zap, Check,
   ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive,
-  Scan, ChevronLeft, ChevronRight, Paintbrush, Wand2
+  Scan, ChevronLeft, ChevronRight, Paintbrush, Wand2,
+  Image, Palette, Settings2, CircleDot, Compass, Sunset, Building, 
+  TreePine, Warehouse
 } from 'lucide-react';
 import { 
   ArtStyle, BackgroundTheme, StanceStyle, 
@@ -374,12 +376,12 @@ const GeneratingScreen: React.FC<GeneratingScreenProps> = ({
 
 // Scene options with beautiful gradients
 const SCENES = [
-  { id: BackgroundTheme.SOLID, name: 'Studio', icon: Layers, gradient: 'from-zinc-800 to-zinc-900' },
-  { id: BackgroundTheme.MOUNTAINS, name: 'Mountains', icon: Mountain, gradient: 'from-slate-700 via-blue-800 to-orange-400' },
-  { id: BackgroundTheme.FOREST, name: 'Forest', icon: Trees, gradient: 'from-emerald-900 to-green-600' },
-  { id: BackgroundTheme.DESERT, name: 'Desert', icon: Sun, gradient: 'from-amber-700 via-orange-600 to-yellow-400' },
-  { id: BackgroundTheme.CITY, name: 'Urban', icon: Building2, gradient: 'from-slate-900 via-slate-700 to-cyan-800' },
-  { id: BackgroundTheme.NEON, name: 'Neon', icon: Zap, gradient: 'from-purple-900 via-pink-700 to-rose-500' },
+  { id: BackgroundTheme.MOUNTAINS, name: 'Mountains', icon: Mountain, gradient: 'from-slate-600 via-blue-700 to-orange-400' },
+  { id: BackgroundTheme.FOREST, name: 'Forest', icon: TreePine, gradient: 'from-emerald-800 to-green-500' },
+  { id: BackgroundTheme.DESERT, name: 'Desert', icon: Sunset, gradient: 'from-amber-600 via-orange-500 to-yellow-400' },
+  { id: BackgroundTheme.CITY, name: 'City', icon: Building, gradient: 'from-slate-800 via-slate-600 to-cyan-700' },
+  { id: BackgroundTheme.NEON, name: 'Neon', icon: Zap, gradient: 'from-purple-800 via-pink-600 to-rose-500' },
+  { id: BackgroundTheme.GARAGE, name: 'Garage', icon: Warehouse, gradient: 'from-zinc-700 via-zinc-600 to-zinc-500' },
 ];
 
 const App: React.FC = () => {
@@ -782,16 +784,16 @@ const App: React.FC = () => {
   };
 
   const getStanceOptions = () => {
+    // Simplified to just 2 options: Stock + one contextual option
     if (analysis?.isOffroad) {
       return [
-        { id: StanceStyle.STOCK, label: 'Stock' },
-        { id: StanceStyle.LIFTED, label: 'Lifted' },
-        { id: StanceStyle.STEELIES, label: 'Mud Tires' },
+        { id: StanceStyle.STOCK, label: 'As It Sits', desc: 'Keep current height', icon: '🚗' },
+        { id: StanceStyle.LIFTED, label: 'Lifted', desc: 'Higher + bigger tires', icon: '🏔️' },
       ];
     }
     return [
-      { id: StanceStyle.STOCK, label: 'Stock' },
-      { id: StanceStyle.LOWERED, label: 'Lowered' },
+      { id: StanceStyle.STOCK, label: 'As It Sits', desc: 'Keep current stance', icon: '🚗' },
+      { id: StanceStyle.LOWERED, label: 'Lowered', desc: 'Street stance look', icon: '🏎️' },
     ];
   };
 
@@ -970,9 +972,9 @@ const App: React.FC = () => {
               {/* Progress dots */}
               <div className="flex items-center justify-center gap-2 mb-3">
                 {[
-                  { step: CustomizeStep.ANGLE, label: 'Angle', icon: Aperture },
-                  { step: CustomizeStep.SCENE, label: 'Scene', icon: Mountain },
-                  { step: CustomizeStep.STYLE, label: 'Style', icon: Paintbrush },
+                  { step: CustomizeStep.ANGLE, label: 'Angle', icon: Compass },
+                  { step: CustomizeStep.SCENE, label: 'Scene', icon: Image },
+                  { step: CustomizeStep.STYLE, label: 'Style', icon: Settings2 },
                   { step: CustomizeStep.EXTRAS, label: 'Extras', icon: Wand2 },
                 ].map((item, index) => {
                   const isActive = customizeStep === item.step;
@@ -1158,41 +1160,25 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Stance */}
+                  {/* Stance - Simplified to 2 options */}
                   <div>
-                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Stance</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {getStanceOptions().map((opt) => {
-                        const stanceEmojis: Record<string, string> = {
-                          'Stock': '📍',
-                          'Lifted + AT': '⬆️',
-                          'Steelies + Mud': '🔩',
-                          'Lowered + Wheels': '⬇️',
-                        };
-                        const stanceDescs: Record<string, string> = {
-                          'Stock': 'As it sits now',
-                          'Lifted + AT': 'Ready for trails',
-                          'Steelies + Mud': 'Built for mud',
-                          'Lowered + Wheels': 'Street stance',
-                        };
-                        return (
-                          <button
-                            key={opt.id}
-                            onClick={() => setStance(opt.id)}
-                            className={`p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
-                              stance === opt.id
-                                ? 'bg-zinc-800 ring-2 ring-amber-500'
-                                : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
-                            }`}
-                          >
-                            <span className="text-lg">{stanceEmojis[opt.label] || '📍'}</span>
-                            <div>
-                              <div className="text-sm font-semibold">{opt.label}</div>
-                              <div className="text-[9px] text-zinc-500">{stanceDescs[opt.label] || ''}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Ride Height</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {getStanceOptions().map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setStance(opt.id)}
+                          className={`p-4 rounded-xl text-center transition-all ${
+                            stance === opt.id
+                              ? 'bg-zinc-800 ring-2 ring-amber-500'
+                              : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
+                          }`}
+                        >
+                          <span className="text-2xl mb-2 block">{opt.icon}</span>
+                          <div className="text-sm font-semibold">{opt.label}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5">{opt.desc}</div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
