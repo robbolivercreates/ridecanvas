@@ -349,37 +349,20 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
          ✗ DO NOT draw phone status bars, signal icons, battery indicators
          ✗ DO NOT draw time, date, or any text overlays
          ✗ DO NOT simulate a phone screen or device frame
+         ✗ The image must be PURE ARTWORK with NO interface elements
          
-      2. VEHICLE SIZE - THE CAR MUST BE SMALL:
-         ═══════════════════════════════════════════════════════════
-         ⚠️ THIS IS THE MOST IMPORTANT REQUIREMENT ⚠️
-         ═══════════════════════════════════════════════════════════
+      2. VEHICLE SIZE AND POSITION:
+         - Vehicle size: 30-35% of image WIDTH
+         - Vehicle position: LOWER-CENTER (around 55-60% from top)
+         - More sky/scenery ABOVE the vehicle
+         - Less ground BELOW the vehicle
+         - This allows room for phone clock and widgets at top
          
-         Think of it like this:
-         - Imagine photographing the car from 100 METERS AWAY
-         - The car should look like a TOY in a VAST landscape
-         - The SCENERY is the hero, the car is a small accent
-         
-         SPACING RULES:
-         - Leave AT LEAST 2-3 car widths of EMPTY SPACE on the LEFT side
-         - Leave AT LEAST 2-3 car widths of EMPTY SPACE on the RIGHT side
-         - The car must NOT touch or nearly touch the image edges
-         - There should be MORE background than car
-         
-         ❌ BAD: Car fills most of the width, barely any margin on sides
-         ✅ GOOD: Car is SMALL, floating in center with HUGE empty space around it
-         
-         If you're unsure, make the car SMALLER. It's better too small than too big.
-         
-      3. VEHICLE POSITION:
-         - Vertically: TRUE CENTER (exactly 50% from top)
-         - Horizontally: TRUE CENTER
-         - EQUAL generous space on ALL sides (top, bottom, left, right)
-         
-      4. COMPOSITION:
-         - Epic VAST landscape with tiny vehicle
-         - Background scenery should DOMINATE the image
-         - Think: drone shot from high altitude, or National Geographic landscape
+      3. COMPOSITION:
+         - Epic landscape with the vehicle as a focal point
+         - PERFECTLY CENTERED - vehicle in the exact middle
+         - Generous margins on all sides (top, bottom, left, right)
+         - Think: poster with the subject floating in the center
          
       ═══════════════════════════════════════════════════════════
     `,
