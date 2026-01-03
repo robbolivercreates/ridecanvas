@@ -772,15 +772,29 @@ const App: React.FC = () => {
                 )}
               </button>
               
-              {/* DEV MODE BUTTON */}
+              {/* DEV MODE BUTTONS */}
               {isDevMode && (
-                <button 
-                  onClick={handleDevUnlock}
-                  disabled={isProcessingPayment}
-                  className="w-full py-3 mt-2 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  🔓 DEV: Skip Payment
-                </button>
+                <div className="space-y-2 mt-2">
+                  <button 
+                    onClick={() => {
+                      if (!previewArt || !analysis) return;
+                      const link = document.createElement('a');
+                      link.href = `data:image/png;base64,${previewArt}`;
+                      link.download = `RideCanvas-${analysis.make}-${analysis.model}-Phone.png`;
+                      link.click();
+                    }}
+                    className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    📱 DEV: Download Phone Only
+                  </button>
+                  <button 
+                    onClick={handleDevUnlock}
+                    disabled={isProcessingPayment}
+                    className="w-full py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    🔓 DEV: Generate All Formats
+                  </button>
+                </div>
               )}
             </div>
 
