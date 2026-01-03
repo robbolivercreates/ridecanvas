@@ -74,10 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const generateWithReference = async (format: 'desktop' | 'print'): Promise<string> => {
       const fullPrompt = buildFollowUpGenerationPrompt(basePrompt, format);
       
-      console.log(`Generating ${format} format...`);
-      
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
+        model: 'gemini-3-pro-image-preview',
         contents: { 
           parts: [
             { inlineData: { mimeType: "image/png", data: previewArt } },
@@ -87,8 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         config: { responseModalities: ["image", "text"] },
       });
-
-      console.log(`${format} generation complete`);
 
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {

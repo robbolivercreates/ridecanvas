@@ -311,11 +311,10 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     orientation: "VERTICAL/PORTRAIT (9:16, taller than wide)",
     composition: `
       PHONE WALLPAPER COMPOSITION:
-      - Vehicle positioned in LOWER THIRD (55-60% down from top)
+      - Vehicle positioned in LOWER THIRD (60-70% down from top)
       - Leave LOTS of sky/space above for phone clock and notch
-      - Car size: 25-30% of image width (small, like a distant landscape photo)
+      - Car size: 35-40% of image width
       - Perfect for mobile lock screen
-      - Vast scenery with small vehicle - landscape photography feel
     `,
     resolution: "2160x3840 (4K vertical - Ultra HD quality)"
   },
@@ -326,7 +325,7 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
       DESKTOP WALLPAPER COMPOSITION:
       - Vehicle centered, slightly lower (55% from top)
       - Wide panoramic feel
-      - Car size: 30-35% of image width
+      - Car size: 40-45% of image width
       - Space on sides for desktop icons
     `,
     resolution: "3840x2160 (4K UHD - Ultra HD quality)"
@@ -338,7 +337,7 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
       PRINT COMPOSITION:
       - Vehicle centered (50% from top)
       - Balanced margins for framing
-      - Car size: 40% of image width
+      - Car size: 50% of image width
       - High detail for large format printing
     `,
     resolution: "4096x3072 (4K print quality - suitable for large format printing)"
