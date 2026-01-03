@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import { 
   Upload, Download, 
@@ -22,6 +22,120 @@ enum Step {
   PREVIEW = 5,
   COMPLETE = 6,
 }
+
+// ============ BEFORE/AFTER SLIDER COMPONENT ============
+interface BeforeAfterSliderProps {
+  beforeImage: string;
+  afterImage: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+}
+
+const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ 
+  beforeImage, 
+  afterImage, 
+  beforeLabel = 'Before',
+  afterLabel = 'After'
+}) => {
+  const [sliderPosition, setSliderPosition] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMove = (clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSliderPosition(percentage);
+  };
+
+  const handleMouseDown = () => setIsDragging(true);
+  const handleMouseUp = () => setIsDragging(false);
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) handleMove(e.clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    handleMove(e.touches[0].clientX);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsDragging(false);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative aspect-[9/16] rounded-2xl overflow-hidden cursor-ew-resize select-none touch-pan-y"
+      onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
+    >
+      {/* After Image (full) */}
+      <img 
+        src={`data:image/png;base64,${afterImage}`}
+        className="absolute inset-0 w-full h-full object-contain bg-black"
+        alt="After"
+        draggable={false}
+      />
+      
+      {/* Before Image (clipped) */}
+      <div 
+        className="absolute inset-0 overflow-hidden"
+        style={{ width: `${sliderPosition}%` }}
+      >
+        <img 
+          src={`data:image/jpeg;base64,${beforeImage}`}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ width: `${100 / (sliderPosition / 100)}%`, maxWidth: 'none' }}
+          alt="Before"
+          draggable={false}
+        />
+      </div>
+      
+      {/* Slider Line */}
+      <div 
+        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10"
+        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+      >
+        {/* Slider Handle */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+          onTouchStart={() => setIsDragging(true)}
+          onTouchEnd={() => setIsDragging(false)}
+        >
+          <div className="flex items-center gap-1 text-black">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+            </svg>
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      {/* Labels */}
+      <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full text-xs font-medium text-white/80">
+        {beforeLabel}
+      </div>
+      <div className="absolute top-4 right-4 px-3 py-1.5 bg-amber-500/90 backdrop-blur-sm rounded-full text-xs font-bold text-black">
+        {afterLabel}
+      </div>
+      
+      {/* Drag hint */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white/60 flex items-center gap-2 animate-pulse">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+        </svg>
+        Drag to compare
+      </div>
+    </div>
+  );
+};
 
 // Scene options with beautiful gradients
 const SCENES = [
@@ -64,6 +178,9 @@ const App: React.FC = () => {
   
   // DEV MODE - bypass paywall with ?dev=1
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === '1';
+  
+  // DEMO MODE - clean interface for recording content with ?demo=1
+  const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1';
 
   // Check for payment return on mount
   useEffect(() => {
@@ -693,7 +810,10 @@ const App: React.FC = () => {
               <Sparkles size={20} />
               Create Art
             </button>
-            <p className="text-center text-[11px] text-zinc-600 mt-3">Free preview. $3.99 for 4K pack.</p>
+            {/* Hide price in demo mode */}
+            {!isDemoMode && (
+              <p className="text-center text-[11px] text-zinc-600 mt-3">Free preview. $3.99 for 4K pack.</p>
+            )}
           </div>
         )}
 
@@ -708,103 +828,154 @@ const App: React.FC = () => {
         {/* ============ PREVIEW ============ */}
         {step === Step.PREVIEW && previewArt && !hasPaid && (
           <div className="pt-4">
-            {/* Preview Image - Blurred */}
-            <div className="relative aspect-[9/16] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
-              <img 
-                src={`data:image/png;base64,${previewArt}`}
-                className="w-full h-full object-contain blur-[5px] opacity-80"
-                alt="Preview"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-black/40 backdrop-blur flex items-center justify-center border border-white/10">
-                    <svg className="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <p className="text-white/60 text-sm font-medium">Preview</p>
+            
+            {/* DEMO MODE: Before/After Slider */}
+            {isDemoMode && imageBase64 ? (
+              <>
+                {/* Title */}
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-bold text-white">✨ Your art is ready</h2>
+                  <p className="text-sm text-zinc-500">
+                    {analysis?.year} {analysis?.make} {analysis?.model}
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Pricing Card */}
-            <div className="bg-zinc-900 rounded-2xl p-5 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                    <Package size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">4K Premium Pack</h3>
-                    <p className="text-xs text-zinc-500">All 3 formats in ZIP</p>
+                
+                {/* Before/After Slider */}
+                <div className="mb-5">
+                  <BeforeAfterSlider 
+                    beforeImage={imageBase64}
+                    afterImage={previewArt}
+                    beforeLabel="Original"
+                    afterLabel="Art"
+                  />
+                </div>
+                
+                {/* Download Button (Demo Mode - clean, no paywall) */}
+                <button 
+                  onClick={() => {
+                    if (!previewArt || !analysis) return;
+                    const link = document.createElement('a');
+                    link.href = `data:image/png;base64,${previewArt}`;
+                    link.download = `RideCanvas-${analysis.make}-${analysis.model}.png`;
+                    link.click();
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                >
+                  <Download size={20} />
+                  Download
+                </button>
+                
+                {/* Create Another */}
+                <button 
+                  onClick={startNew}
+                  className="w-full py-3 mt-3 text-zinc-500 hover:text-white transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={14} />
+                  Create Another
+                </button>
+              </>
+            ) : (
+              /* NORMAL MODE: Blurred preview with paywall */
+              <>
+                {/* Preview Image - Blurred */}
+                <div className="relative aspect-[9/16] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
+                  <img 
+                    src={`data:image/png;base64,${previewArt}`}
+                    className="w-full h-full object-contain blur-[5px] opacity-80"
+                    alt="Preview"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-black/40 backdrop-blur flex items-center justify-center border border-white/10">
+                        <svg className="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <p className="text-white/60 text-sm font-medium">Preview</p>
+                    </div>
                   </div>
                 </div>
-                <span className="text-2xl font-bold text-white">$3.99</span>
-              </div>
-              
-              <div className="flex gap-2 mb-5">
-                {[
-                  { icon: Smartphone, label: 'Phone', ratio: '9:16' },
-                  { icon: Monitor, label: 'Desktop', ratio: '16:9' },
-                  { icon: Printer, label: 'Print', ratio: '4:3' },
-                ].map((fmt) => (
-                  <div key={fmt.label} className="flex-1 bg-zinc-800 rounded-xl p-2.5 text-center">
-                    <fmt.icon size={16} className="mx-auto mb-1 text-zinc-500" />
-                    <span className="text-[10px] text-zinc-400 block">{fmt.label}</span>
-                    <span className="text-[9px] text-amber-500 font-medium">4K</span>
-                  </div>
-                ))}
-              </div>
 
-              <button 
-                onClick={handlePurchase}
-                disabled={isProcessingPayment}
-                className="w-full py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessingPayment ? (
-                  <div className="w-5 h-5 border-2 border-zinc-300 border-t-black rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Download size={18} />
-                    Unlock Downloads
-                  </>
-                )}
-              </button>
-              
-              {/* DEV MODE BUTTONS */}
-              {isDevMode && (
-                <div className="space-y-2 mt-2">
+                {/* Pricing Card */}
+                <div className="bg-zinc-900 rounded-2xl p-5 mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                        <Package size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">4K Premium Pack</h3>
+                        <p className="text-xs text-zinc-500">All 3 formats in ZIP</p>
+                      </div>
+                    </div>
+                    <span className="text-2xl font-bold text-white">$3.99</span>
+                  </div>
+                  
+                  <div className="flex gap-2 mb-5">
+                    {[
+                      { icon: Smartphone, label: 'Phone', ratio: '9:16' },
+                      { icon: Monitor, label: 'Desktop', ratio: '16:9' },
+                      { icon: Printer, label: 'Print', ratio: '4:3' },
+                    ].map((fmt) => (
+                      <div key={fmt.label} className="flex-1 bg-zinc-800 rounded-xl p-2.5 text-center">
+                        <fmt.icon size={16} className="mx-auto mb-1 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-400 block">{fmt.label}</span>
+                        <span className="text-[9px] text-amber-500 font-medium">4K</span>
+                      </div>
+                    ))}
+                  </div>
+
                   <button 
-                    onClick={() => {
-                      if (!previewArt || !analysis) return;
-                      const link = document.createElement('a');
-                      link.href = `data:image/png;base64,${previewArt}`;
-                      link.download = `RideCanvas-${analysis.make}-${analysis.model}-Phone.png`;
-                      link.click();
-                    }}
-                    className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    📱 DEV: Download Phone Only
-                  </button>
-                  <button 
-                    onClick={handleDevUnlock}
+                    onClick={handlePurchase}
                     disabled={isProcessingPayment}
-                    className="w-full py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    🔓 DEV: Generate All Formats
+                    {isProcessingPayment ? (
+                      <div className="w-5 h-5 border-2 border-zinc-300 border-t-black rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Download size={18} />
+                        Unlock Downloads
+                      </>
+                    )}
                   </button>
+                  
+                  {/* DEV MODE BUTTONS */}
+                  {isDevMode && (
+                    <div className="space-y-2 mt-2">
+                      <button 
+                        onClick={() => {
+                          if (!previewArt || !analysis) return;
+                          const link = document.createElement('a');
+                          link.href = `data:image/png;base64,${previewArt}`;
+                          link.download = `RideCanvas-${analysis.make}-${analysis.model}-Phone.png`;
+                          link.click();
+                        }}
+                        className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        📱 DEV: Download Phone Only
+                      </button>
+                      <button 
+                        onClick={handleDevUnlock}
+                        disabled={isProcessingPayment}
+                        className="w-full py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        🔓 DEV: Generate All Formats
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Adjust Button */}
-            <button 
-              onClick={() => { setPreviewArt(null); setStep(Step.CUSTOMIZE); }}
-              className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
-            >
-              ← Try different settings
-            </button>
+                {/* Adjust Button */}
+                <button 
+                  onClick={() => { setPreviewArt(null); setStep(Step.CUSTOMIZE); }}
+                  className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
+                >
+                  ← Try different settings
+                </button>
+              </>
+            )}
           </div>
         )}
 
