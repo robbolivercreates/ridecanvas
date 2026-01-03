@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Icons</title>
+</head>
+<body>
+  <h1>Right-click each image and "Save As" to create the icons</h1>
+  
+  <h2>icon-192.png</h2>
+  <canvas id="c192" width="192" height="192"></canvas>
+  
+  <h2>icon-512.png</h2>
+  <canvas id="c512" width="512" height="512"></canvas>
+  
+  <script>
+    function drawIcon(ctx, size) {
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#F59E0B');
+      gradient.addColorStop(1, '#EA580C');
+      
+      // Rounded rect background
+      const radius = size * 0.21;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Car icon
+      ctx.save();
+      ctx.translate(size/2, size/2);
+      const scale = size / 512;
+      
+      // Car body
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(-120*scale, 20*scale);
+      ctx.lineTo(-90*scale, -40*scale);
+      ctx.lineTo(90*scale, -40*scale);
+      ctx.lineTo(120*scale, 20*scale);
+      ctx.lineTo(120*scale, 50*scale);
+      ctx.lineTo(-120*scale, 50*scale);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Roof
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.moveTo(-60*scale, -40*scale);
+      ctx.lineTo(-40*scale, -80*scale);
+      ctx.lineTo(60*scale, -80*scale);
+      ctx.lineTo(80*scale, -40*scale);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Windows
+      ctx.fillStyle = 'rgba(245,158,11,0.6)';
+      ctx.beginPath();
+      ctx.moveTo(-50*scale, -35*scale);
+      ctx.lineTo(-35*scale, -70*scale);
+      ctx.lineTo(55*scale, -70*scale);
+      ctx.lineTo(70*scale, -35*scale);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Wheels
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath();
+      ctx.arc(-70*scale, 50*scale, 30*scale, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(70*scale, 50*scale, 30*scale, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(-70*scale, 50*scale, 18*scale, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(70*scale, 50*scale, 18*scale, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    
+    const c192 = document.getElementById('c192');
+    const c512 = document.getElementById('c512');
+    drawIcon(c192.getContext('2d'), 192);
+    drawIcon(c512.getContext('2d'), 512);
+    
+    // Download links
+    setTimeout(() => {
+      const link192 = document.createElement('a');
+      link192.download = 'icon-192.png';
+      link192.href = c192.toDataURL('image/png');
+      link192.textContent = 'Download 192x192';
+      document.body.appendChild(link192);
+      
+      const link512 = document.createElement('a');
+      link512.download = 'icon-512.png';
+      link512.href = c512.toDataURL('image/png');
+      link512.textContent = 'Download 512x512';
+      document.body.appendChild(link512);
+    }, 100);
+  </script>
+</body>
+</html>

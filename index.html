@@ -2,13 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <title>TheGarageCanvas - Turn Your Ride Into Art</title>
     <meta name="description" content="Transform your car photo into stunning wall art. Phone wallpapers, desktop backgrounds, and prints in 4K." />
     <meta name="keywords" content="car art, automotive art, car wallpaper, garage poster, car enthusiast, vehicle art" />
     <meta property="og:title" content="TheGarageCanvas - Turn Your Ride Into Art" />
     <meta property="og:description" content="Transform any car photo into museum-quality art for your wall, phone, or desktop." />
     <meta property="og:type" content="website" />
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- iOS PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GarageCanvas" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    
+    <!-- iOS Splash Screens (will use icon as fallback) -->
+    <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -192,6 +209,56 @@
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      
+      /* PWA Safe Areas for iPhone notch */
+      :root {
+        --safe-area-top: env(safe-area-inset-top, 0px);
+        --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-left: env(safe-area-inset-left, 0px);
+        --safe-area-right: env(safe-area-inset-right, 0px);
+      }
+      
+      body {
+        padding-top: var(--safe-area-top);
+        padding-bottom: var(--safe-area-bottom);
+        padding-left: var(--safe-area-left);
+        padding-right: var(--safe-area-right);
+      }
+      
+      /* Prevent pull-to-refresh in PWA */
+      body {
+        overscroll-behavior-y: contain;
+      }
+      
+      /* iOS button tap highlight */
+      button, a {
+        -webkit-tap-highlight-color: rgba(212, 175, 55, 0.2);
+      }
+      
+      /* Smooth button press animation */
+      .btn-press:active {
+        transform: scale(0.97);
+        transition: transform 0.1s ease;
+      }
+      
+      /* Bounce animation for success states */
+      @keyframes bounce-in {
+        0% { transform: scale(0.8); opacity: 0; }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-bounce-in {
+        animation: bounce-in 0.4s ease-out forwards;
+      }
+      
+      /* Fade slide for step transitions */
+      @keyframes fadeSlideIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-slide-in {
+        animation: fadeSlideIn 0.4s ease-out forwards;
+      }
     </style>
   <script type="importmap">
 {

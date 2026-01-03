@@ -14,6 +14,34 @@ import {
 import { analyzeVehicle, generateArt, generateRemainingFormats, generateArtSet, fileToGenerativePart, GeneratedArtSet } from './services/geminiService';
 import { redirectToCheckout, verifyPayment, checkPaymentStatus, clearPaymentParams } from './services/stripeService';
 
+// ============ HAPTIC FEEDBACK UTILITY ============
+const haptic = {
+  // Light tap - for button presses
+  light: () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  },
+  // Medium - for selections
+  medium: () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(25);
+    }
+  },
+  // Success - for completed actions
+  success: () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate([20, 50, 40]);
+    }
+  },
+  // Error - for failed actions
+  error: () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate([50, 30, 50, 30, 50]);
+    }
+  }
+};
+
 enum Step {
   UPLOAD = 1,
   ANALYZING = 2,
@@ -493,6 +521,7 @@ const App: React.FC = () => {
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
+      haptic.medium(); // Haptic on file select
       const base64 = await fileToGenerativePart(e.target.files[0]);
       setImageBase64(base64);
       setPreviewArt(null);
@@ -505,9 +534,11 @@ const App: React.FC = () => {
       try {
         const res = await analyzeVehicle(base64);
         setAnalysis(res);
+        haptic.success(); // Haptic on analysis complete
         // Don't transition yet - let the scan animation play
       } catch (err) {
         console.error('Analysis error:', err);
+        haptic.error(); // Haptic on error
         setStep(Step.UPLOAD);
         alert("Couldn't analyze that image. Try a clearer photo.");
       }
@@ -516,6 +547,7 @@ const App: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!imageBase64 || !analysis) return;
+    haptic.medium(); // Haptic on button press
     setStep(Step.GENERATING);
     setStatusMessage("Creating your artwork...");
     
@@ -525,9 +557,11 @@ const App: React.FC = () => {
         fidelity, position, stance, selectedMods
       );
       setPreviewArt(art);
+      haptic.success(); // Haptic on art complete!
       setStep(Step.PREVIEW);
     } catch (err) {
       console.error('Generation error:', err);
+      haptic.error();
       setStep(Step.CUSTOMIZE);
       alert("Generation failed. Please try again.");
     }
@@ -588,6 +622,7 @@ const App: React.FC = () => {
 
   const handleDownload = (format: 'phone' | 'desktop' | 'print') => {
     if (!artSet || !analysis) return;
+    haptic.success(); // Haptic on download
     
     // Use correct mimeType and extension
     const mimeType = artSet.mimeType || 'image/png';
@@ -717,7 +752,7 @@ const App: React.FC = () => {
         
         {/* ============ UPLOAD ============ */}
         {step === Step.UPLOAD && (
-          <div className="pt-16">
+          <div className="pt-16 animate-fade-slide-in">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Upload Your Ride</h1>
               <p className="text-zinc-500 text-sm">Side views look best. Any angle works.</p>
@@ -793,7 +828,7 @@ const App: React.FC = () => {
 
         {/* ============ CUSTOMIZE ============ */}
         {step === Step.CUSTOMIZE && analysis && (
-          <div className="pt-4">
+          <div className="pt-4 animate-fade-slide-in">
             {/* Vehicle Preview Card */}
             <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
               <img 
@@ -1030,7 +1065,7 @@ const App: React.FC = () => {
 
         {/* ============ PREVIEW ============ */}
         {step === Step.PREVIEW && previewArt && !hasPaid && (
-          <div className="pt-4">
+          <div className="pt-4 animate-fade-slide-in">
             
             {/* DEMO MODE: Before/After Slider */}
             {isDemoMode && imageBase64 ? (
@@ -1191,7 +1226,7 @@ const App: React.FC = () => {
 
         {/* ============ COMPLETE ============ */}
         {step === Step.COMPLETE && hasPaid && artSet && (
-          <div className="pt-4">
+          <div className="pt-4 animate-fade-slide-in">
             {/* Success Image */}
             <div className="relative aspect-[9/16] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
               <img 
