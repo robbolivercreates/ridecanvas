@@ -13,7 +13,72 @@ import { VehicleAnalysis, BackgroundTheme, FidelityMode, PositionMode, StanceSty
 // FILE UTILITIES
 // ============================================================================
 
+// Maximum image dimensions to avoid API limits (Gemini has ~20MB limit)
+const MAX_IMAGE_DIMENSION = 2048;
+const MAX_IMAGE_SIZE_MB = 4;
+
+/**
+ * Compress and resize image if needed
+ * This prevents "image not clear" errors from oversized images
+ */
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    img.onload = () => {
+      let { width, height } = img;
+      
+      // Calculate new dimensions if image is too large
+      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+        const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // Use JPEG with quality adjustment based on file size
+      let quality = 0.85;
+      if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+        quality = 0.7; // More compression for very large files
+      }
+      
+      const base64String = canvas.toDataURL('image/jpeg', quality);
+      const base64Data = base64String.split(',')[1];
+      resolve(base64Data);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image'));
+    
+    // Read the file as data URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 export const fileToGenerativePart = async (file: File): Promise<string> => {
+  // Check if compression is needed
+  const needsCompression = 
+    file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024 || // Larger than 4MB
+    file.type === 'image/heic' || 
+    file.type === 'image/heif';
+  
+  if (needsCompression || file.type.startsWith('image/')) {
+    // Always use canvas for consistent handling
+    return compressImage(file);
+  }
+  
+  // Fallback for non-image files (shouldn't happen)
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {

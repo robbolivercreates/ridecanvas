@@ -341,16 +341,17 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
          ✗ The image must be PURE ARTWORK with NO interface elements
          
       2. VEHICLE SIZE AND POSITION:
-         - Vehicle size: 25-30% of image WIDTH (relatively small)
-         - Vehicle position: CENTER of the image (around 50% from top)
-         - NOT too low - keep it centered, slightly above middle
-         - Leave sky/space above AND below the vehicle
+         - Vehicle size: 28-32% of image WIDTH
+         - Vehicle position: UPPER-CENTER (around 40-45% from top)
+         - The vehicle should be in the MIDDLE or SLIGHTLY ABOVE middle
+         - NOT in the bottom third - avoid placing too low
+         - Equal visual weight above and below the vehicle
          
       3. COMPOSITION:
          - Epic landscape with the vehicle as a focal point
-         - Balanced composition - vehicle centered vertically
-         - Dramatic scenery surrounding the vehicle
-         - Think: adventure poster, NOT a phone mockup
+         - CENTERED composition - vehicle in the heart of the scene
+         - Sky/mountains above, ground/terrain below
+         - Think: adventure poster with balanced framing
          
       ═══════════════════════════════════════════════════════════
     `,
