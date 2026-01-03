@@ -1074,7 +1074,7 @@ const App: React.FC = () => {
           <div className="pt-4 animate-fade-slide-in">
             
             {/* DEMO MODE: Before/After Slider */}
-            {isDemoMode && imageBase64 ? (
+            {isDemoMode ? (
               <>
                 {/* Title */}
                 <div className="text-center mb-4">
@@ -1084,15 +1084,25 @@ const App: React.FC = () => {
                   </p>
                 </div>
                 
-                {/* Before/After Slider with auto-animation */}
+                {/* Before/After Slider with auto-animation (or just art if no original) */}
                 <div className="mb-5">
-                  <BeforeAfterSlider 
-                    beforeImage={imageBase64}
-                    afterImage={previewArt}
-                    beforeLabel="Original"
-                    afterLabel="Art"
-                    autoAnimate={true}
-                  />
+                  {imageBase64 ? (
+                    <BeforeAfterSlider 
+                      beforeImage={imageBase64}
+                      afterImage={previewArt}
+                      beforeLabel="Original"
+                      afterLabel="Art"
+                      autoAnimate={true}
+                    />
+                  ) : (
+                    <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-black">
+                      <img 
+                        src={`data:image/png;base64,${previewArt}`}
+                        className="w-full h-full object-contain"
+                        alt="Your artwork"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 {/* Download Button (Demo Mode - clean, no paywall) */}
