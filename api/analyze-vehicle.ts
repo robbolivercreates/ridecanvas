@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Call Gemini with SECRET prompt (never exposed to client)
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: { 
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: image } }, 

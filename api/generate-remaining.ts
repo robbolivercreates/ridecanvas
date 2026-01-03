@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const fullPrompt = buildFollowUpGenerationPrompt(basePrompt, format);
       
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
+        model: 'gemini-3-pro-image-preview',
         contents: { 
           parts: [
             { inlineData: { mimeType: "image/png", data: previewArt } },
