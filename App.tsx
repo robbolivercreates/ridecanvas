@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import JSZip from 'jszip';
 import { 
-  Upload, Image as ImageIcon, Download, 
+  Upload, Download, 
   RefreshCw, Mountain, Building2, Sparkles, Car,
   Smartphone, Monitor, Trees, Sun, Layers, Zap, Check,
-  ChevronDown, Package, Printer, Camera, Aperture, Plus
+  ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive
 } from 'lucide-react';
 import { 
   ArtStyle, BackgroundTheme, StanceStyle, 
   VehicleAnalysis, FidelityMode, PositionMode 
 } from './types';
-import { analyzeVehicle, generateArt, generateArtSet, fileToGenerativePart, GeneratedArtSet } from './services/geminiService';
+import { analyzeVehicle, generateArt, generateRemainingFormats, fileToGenerativePart, GeneratedArtSet } from './services/geminiService';
 import { redirectToCheckout, verifyPayment, checkPaymentStatus, clearPaymentParams } from './services/stripeService';
 
 enum Step {
@@ -56,6 +57,7 @@ const App: React.FC = () => {
   // Payment
   const [hasPaid, setHasPaid] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
@@ -77,11 +79,9 @@ const App: React.FC = () => {
   // Apply AI suggestions when analysis completes
   useEffect(() => {
     if (analysis) {
-      // Set suggested background
       if (analysis.suggestedBackground) {
         setBackground(analysis.suggestedBackground);
       }
-      // Set suggested stance
       if (analysis.suggestedStance) {
         setStance(analysis.suggestedStance);
       }
@@ -90,7 +90,7 @@ const App: React.FC = () => {
 
   const handlePaymentReturn = async (sessionId: string) => {
     setIsProcessingPayment(true);
-    setStatusMessage("Creating your 4K wallpapers...");
+    setStatusMessage("Verifying payment...");
     setStep(Step.GENERATING);
     
     try {
@@ -109,17 +109,43 @@ const App: React.FC = () => {
           setStance(state.stance);
           setSelectedMods(state.selectedMods || []);
           
-          const set = await generateArtSet(
-            state.imageBase64, state.analysis, ArtStyle.POSTER, 
-            state.background, state.fidelity || FidelityMode.CLEAN_BUILD, 
-            state.position || PositionMode.AS_PHOTOGRAPHED,
-            state.stance || StanceStyle.STOCK, 
-            state.selectedMods || [], 
-            apiKey || localStorage.getItem('gemini_api_key') || '',
-            (progress) => setStatusMessage(progress)
-          );
+          // Use the existing preview as the phone art (consistency!)
+          const existingPreview = state.previewArt;
           
-          setArtSet(set);
+          if (existingPreview) {
+            setStatusMessage("Creating remaining formats...");
+            // Generate only desktop and print, reusing the preview as phone
+            const set = await generateRemainingFormats(
+              state.imageBase64, 
+              existingPreview,
+              state.analysis, 
+              ArtStyle.POSTER, 
+              state.background, 
+              state.fidelity || FidelityMode.CLEAN_BUILD, 
+              state.position || PositionMode.AS_PHOTOGRAPHED,
+              state.stance || StanceStyle.STOCK, 
+              state.selectedMods || [], 
+              apiKey || localStorage.getItem('gemini_api_key') || '',
+              (progress) => setStatusMessage(progress)
+            );
+            setArtSet(set);
+          } else {
+            // Fallback: generate all 3 (shouldn't happen normally)
+            setStatusMessage("Creating all formats...");
+            const { generateArtSet } = await import('./services/geminiService');
+            const set = await generateArtSet(
+              state.imageBase64, state.analysis, ArtStyle.POSTER, 
+              state.background, state.fidelity || FidelityMode.CLEAN_BUILD, 
+              state.position || PositionMode.AS_PHOTOGRAPHED,
+              state.stance || StanceStyle.STOCK, 
+              state.selectedMods || [], 
+              apiKey || localStorage.getItem('gemini_api_key') || '',
+              (progress) => setStatusMessage(progress)
+            );
+            setArtSet(set);
+          }
+          
+          setPreviewArt(existingPreview);
           setHasPaid(true);
           setStep(Step.COMPLETE);
           localStorage.removeItem('ridecanvas_pending_art');
@@ -187,13 +213,14 @@ const App: React.FC = () => {
   };
 
   const handlePurchase = async () => {
-    if (!imageBase64 || !analysis) return;
+    if (!imageBase64 || !analysis || !previewArt) return;
     setIsProcessingPayment(true);
     
     try {
-      // Save state for after payment
+      // Save state including the preview art for consistency
       localStorage.setItem('ridecanvas_pending_art', JSON.stringify({
-        imageBase64, analysis, background, fidelity, position, stance, selectedMods
+        imageBase64, analysis, background, fidelity, position, stance, selectedMods,
+        previewArt // Save the preview so we can reuse it!
       }));
       
       await redirectToCheckout(
@@ -211,8 +238,46 @@ const App: React.FC = () => {
     if (!artSet || !analysis) return;
     const link = document.createElement('a');
     link.href = `data:image/png;base64,${artSet[format]}`;
-    link.download = `RideCanvas-${analysis.make}-${analysis.model}-${format}.png`;
+    link.download = `RideCanvas-${analysis.make}-${analysis.model}-${format}-4K.png`;
     link.click();
+  };
+
+  const handleDownloadZip = async () => {
+    if (!artSet || !analysis) return;
+    setIsDownloading(true);
+    
+    try {
+      const zip = new JSZip();
+      const vehicleName = `${analysis.year}-${analysis.make}-${analysis.model}`.replace(/\s+/g, '-');
+      
+      // Convert base64 to blob and add to zip
+      const addToZip = (base64: string, filename: string) => {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        zip.file(filename, byteArray);
+      };
+      
+      addToZip(artSet.phone, `${vehicleName}-Phone-4K.png`);
+      addToZip(artSet.desktop, `${vehicleName}-Desktop-4K.png`);
+      addToZip(artSet.print, `${vehicleName}-Print-4K.png`);
+      
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `RideCanvas-${vehicleName}-4K-Pack.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('ZIP error:', err);
+      alert('Failed to create ZIP. Try downloading individually.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const toggleMod = (modName: string) => {
@@ -559,7 +624,7 @@ const App: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">4K Premium Pack</h3>
-                    <p className="text-xs text-zinc-500">All 3 formats included</p>
+                    <p className="text-xs text-zinc-500">All 3 formats in ZIP</p>
                   </div>
                 </div>
                 <span className="text-2xl font-bold text-white">$3.99</span>
@@ -621,24 +686,41 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Download Buttons */}
+            {/* ZIP Download - Primary */}
+            <button 
+              onClick={handleDownloadZip}
+              disabled={isDownloading}
+              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-3 mb-4 disabled:opacity-50"
+            >
+              {isDownloading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <FolderArchive size={20} />
+                  Download All (ZIP)
+                </>
+              )}
+            </button>
+
+            {/* Individual Downloads */}
             <div className="space-y-2 mb-5">
+              <p className="text-xs text-zinc-600 text-center mb-2">or download individually</p>
               {[
-                { key: 'phone', icon: Smartphone, label: 'Phone Wallpaper', ratio: '9:16' },
-                { key: 'desktop', icon: Monitor, label: 'Desktop Wallpaper', ratio: '16:9' },
-                { key: 'print', icon: Printer, label: 'Print Ready', ratio: '4:3' },
+                { key: 'phone', icon: Smartphone, label: 'Phone', ratio: '9:16' },
+                { key: 'desktop', icon: Monitor, label: 'Desktop', ratio: '16:9' },
+                { key: 'print', icon: Printer, label: 'Print', ratio: '4:3' },
               ].map((fmt) => (
                 <button 
                   key={fmt.key}
                   onClick={() => handleDownload(fmt.key as 'phone' | 'desktop' | 'print')}
-                  className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-colors flex items-center justify-between px-4"
+                  className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-colors flex items-center justify-between px-4"
                 >
                   <div className="flex items-center gap-3">
-                    <fmt.icon size={18} className="text-zinc-500" />
-                    <span className="font-medium">{fmt.label}</span>
-                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded font-medium">4K</span>
+                    <fmt.icon size={16} className="text-zinc-500" />
+                    <span className="text-sm">{fmt.label}</span>
+                    <span className="text-[9px] text-zinc-600">{fmt.ratio}</span>
                   </div>
-                  <Download size={16} className="text-zinc-500" />
+                  <Download size={14} className="text-zinc-600" />
                 </button>
               ))}
             </div>

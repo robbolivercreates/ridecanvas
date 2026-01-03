@@ -446,6 +446,40 @@ export const generateArtSet = async (
   };
 };
 
+// Generate remaining formats from existing preview (saves 1 API call, maintains consistency)
+export const generateRemainingFormats = async (
+  base64Image: string,
+  existingPhoneArt: string,
+  analysis: VehicleAnalysis,
+  style: ArtStyle,
+  background: BackgroundTheme,
+  fidelity: FidelityMode,
+  position: PositionMode,
+  stance: StanceStyle,
+  selectedMods: string[],
+  apiKey: string,
+  onProgress?: (step: string) => void
+): Promise<GeneratedArtSet> => {
+  const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY });
+  
+  const basePrompt = buildBasePrompt(
+    analysis, style, background, fidelity, position, stance, selectedMods
+  );
+
+  // Use existing phone art as the reference
+  onProgress?.("Creating Desktop wallpaper (1/2)...");
+  const desktopArt = await generateSingleFormat(ai, base64Image, existingPhoneArt, basePrompt, 'desktop');
+
+  onProgress?.("Creating Print version (2/2)...");
+  const printArt = await generateSingleFormat(ai, base64Image, existingPhoneArt, basePrompt, 'print');
+
+  return {
+    phone: existingPhoneArt,
+    desktop: desktopArt,
+    print: printArt,
+  };
+};
+
 // Legacy single-format generator (for preview/compatibility)
 export const generateArt = async (
   base64Image: string,
