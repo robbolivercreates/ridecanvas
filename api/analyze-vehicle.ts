@@ -37,15 +37,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { image } = req.body;
 
     if (!image) {
+      console.error('No image provided in request body');
       return res.status(400).json({ error: 'Image is required' });
     }
+
+    console.log('Received image, length:', image?.length || 0);
 
     // Initialize Gemini
     const ai = new GoogleGenAI({ apiKey });
 
+    console.log('Calling Gemini API...');
+
     // Call Gemini with SECRET prompt (never exposed to client)
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: { 
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: image } }, 
@@ -59,8 +64,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     });
 
+    console.log('Gemini response received');
+
     const result = JSON.parse(response.text!);
     result.category = result.category as VehicleCategory;
+
+    console.log('Analysis success:', result.make, result.model);
 
     return res.status(200).json({
       success: true,
@@ -68,7 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error: any) {
-    console.error('Analysis failed:', error);
+    console.error('Analysis failed:', error.message);
+    console.error('Full error:', JSON.stringify(error, null, 2));
     return res.status(500).json({ 
       error: error.message || 'Analysis failed' 
     });

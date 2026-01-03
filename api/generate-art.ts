@@ -70,9 +70,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const fullPrompt = buildFirstGenerationPrompt(basePrompt, 'phone');
 
+    console.log('Generating art with Gemini...');
+    
     // Generate image
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.0-flash-exp-image-generation',
       contents: { 
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: image } },
@@ -81,6 +83,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       config: { responseModalities: ["image", "text"] },
     });
+    
+    console.log('Image generation response received');
 
     // Extract image from response
     for (const part of response.candidates?.[0]?.content?.parts || []) {
