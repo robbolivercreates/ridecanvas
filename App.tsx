@@ -406,8 +406,11 @@ const App: React.FC = () => {
   // DEV MODE - bypass paywall with ?dev=1
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === '1';
   
-  // DEMO MODE - clean interface for recording content with ?demo=1
-  const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1';
+  // DEMO MODE - clean interface for recording content
+  // Works with ?demo=1 OR secret path /cx (for PWA installation)
+  const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1' 
+    || window.location.pathname === '/cx'
+    || window.location.pathname === '/cx/';
 
   // Check for payment return on mount
   useEffect(() => {
@@ -620,17 +623,43 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDownload = (format: 'phone' | 'desktop' | 'print') => {
+  const handleDownload = async (format: 'phone' | 'desktop' | 'print') => {
     if (!artSet || !analysis) return;
     haptic.success(); // Haptic on download
     
     // Use correct mimeType and extension
     const mimeType = artSet.mimeType || 'image/png';
     const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+    const fileName = `GarageCanvas-${analysis.make}-${analysis.model}-${format}-4K.${extension}`;
+    const base64Data = artSet[format];
     
+    // Convert base64 to blob for sharing
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const file = new File([blob], fileName, { type: mimeType });
+    
+    // Try Web Share API first (iOS can save to gallery)
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'GarageCanvas Art',
+        });
+        return;
+      } catch (err) {
+        console.log('Share cancelled, falling back to download');
+      }
+    }
+    
+    // Fallback: regular download
     const link = document.createElement('a');
-    link.href = `data:${mimeType};base64,${artSet[format]}`;
-    link.download = `GarageCanvas-${analysis.make}-${analysis.model}-${format}-4K.${extension}`;
+    link.href = `data:${mimeType};base64,${base64Data}`;
+    link.download = fileName;
     link.click();
   };
 
@@ -1105,22 +1134,50 @@ const App: React.FC = () => {
                   )}
                 </div>
                 
-                {/* Download Button (Demo Mode - clean, no paywall) */}
+                {/* Save to Gallery Button (Demo Mode - uses Web Share API for iOS) */}
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     if (!previewArt || !analysis) return;
-                    // Get correct mimeType (stored during generation)
+                    
+                    // Get correct mimeType
                     const mimeType = (window as any).__lastArtMimeType || 'image/png';
                     const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+                    const fileName = `GarageCanvas-${analysis.make}-${analysis.model}.${extension}`;
+                    
+                    // Convert base64 to blob
+                    const byteCharacters = atob(previewArt);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                      byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: mimeType });
+                    const file = new File([blob], fileName, { type: mimeType });
+                    
+                    // Try Web Share API first (iOS can save to gallery from here)
+                    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                      try {
+                        await navigator.share({
+                          files: [file],
+                          title: 'GarageCanvas Art',
+                        });
+                        return;
+                      } catch (err) {
+                        // User cancelled or share failed, fall back to download
+                        console.log('Share cancelled, falling back to download');
+                      }
+                    }
+                    
+                    // Fallback: regular download
                     const link = document.createElement('a');
                     link.href = `data:${mimeType};base64,${previewArt}`;
-                    link.download = `GarageCanvas-${analysis.make}-${analysis.model}.${extension}`;
+                    link.download = fileName;
                     link.click();
                   }}
                   className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
                 >
                   <Download size={20} />
-                  Download
+                  Save to Gallery
                 </button>
                 
                 {/* Create Another */}
