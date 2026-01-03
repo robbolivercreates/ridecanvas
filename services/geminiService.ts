@@ -160,6 +160,11 @@ export const generateArt = async (
     throw new Error(result.error || 'Generation failed');
   }
 
+  // Store mimeType for later download
+  if (result.mimeType) {
+    (window as any).__lastArtMimeType = result.mimeType;
+  }
+
   return result.data;
 };
 
@@ -171,6 +176,7 @@ export interface GeneratedArtSet {
   phone: string;   // 9:16 vertical
   desktop: string; // 16:9 horizontal
   print: string;   // 4:3 print
+  mimeType?: string; // image/png or image/jpeg
 }
 
 /**
@@ -214,7 +220,11 @@ export const generateRemainingFormats = async (
     throw new Error(result.error || 'Generation failed');
   }
 
-  return result.data;
+  // Include mimeType in the returned data
+  return {
+    ...result.data,
+    mimeType: result.mimeType || 'image/png'
+  };
 };
 
 /**

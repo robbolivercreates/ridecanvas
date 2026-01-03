@@ -439,6 +439,8 @@ STYLE MATCHING REQUIREMENTS:
 - EXACT same background elements (extend them, don't change them)
 - EXACT same level of detail and shading
 - The vehicle should be PIXEL-PERFECT identical in proportions
+- EXACT same CONDITION of the vehicle (if it has mud, dirt, scratches in the reference, include them!)
+- If the reference shows a dirty/muddy vehicle, ALL outputs MUST show the same dirt/mud
 
 **FORMAT:** ${config.orientation}
 **RESOLUTION:** ${config.resolution}

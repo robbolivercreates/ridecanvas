@@ -87,7 +87,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (part.inlineData) {
         return res.status(200).json({
           success: true,
-          data: part.inlineData.data
+          data: part.inlineData.data,
+          mimeType: part.inlineData.mimeType || 'image/png'
         });
       }
     }

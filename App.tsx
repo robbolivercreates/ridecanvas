@@ -272,9 +272,14 @@ const App: React.FC = () => {
 
   const handleDownload = (format: 'phone' | 'desktop' | 'print') => {
     if (!artSet || !analysis) return;
+    
+    // Use correct mimeType and extension
+    const mimeType = artSet.mimeType || 'image/png';
+    const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+    
     const link = document.createElement('a');
-    link.href = `data:image/png;base64,${artSet[format]}`;
-    link.download = `RideCanvas-${analysis.make}-${analysis.model}-${format}-4K.png`;
+    link.href = `data:${mimeType};base64,${artSet[format]}`;
+    link.download = `RideCanvas-${analysis.make}-${analysis.model}-${format}-4K.${extension}`;
     link.click();
   };
 
@@ -286,6 +291,9 @@ const App: React.FC = () => {
       const zip = new JSZip();
       const vehicleName = `${analysis.year}-${analysis.make}-${analysis.model}`.replace(/\s+/g, '-');
       
+      // Use correct extension based on mimeType
+      const extension = (artSet.mimeType?.includes('jpeg') || artSet.mimeType?.includes('jpg')) ? 'jpg' : 'png';
+      
       const addToZip = (base64: string, filename: string) => {
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);
@@ -296,9 +304,9 @@ const App: React.FC = () => {
         zip.file(filename, byteArray);
       };
       
-      addToZip(artSet.phone, `${vehicleName}-Phone-4K.png`);
-      addToZip(artSet.desktop, `${vehicleName}-Desktop-4K.png`);
-      addToZip(artSet.print, `${vehicleName}-Print-4K.png`);
+      addToZip(artSet.phone, `${vehicleName}-Phone-4K.${extension}`);
+      addToZip(artSet.desktop, `${vehicleName}-Desktop-4K.${extension}`);
+      addToZip(artSet.print, `${vehicleName}-Print-4K.${extension}`);
       
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);

@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Helper to generate with reference image
-    const generateWithReference = async (format: 'desktop' | 'print'): Promise<string> => {
+    const generateWithReference = async (format: 'desktop' | 'print'): Promise<{data: string, mimeType: string}> => {
       const fullPrompt = buildFollowUpGenerationPrompt(basePrompt, format);
       
       const response = await ai.models.generateContent({
@@ -88,25 +88,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
-          return part.inlineData.data!;
+          return {
+            data: part.inlineData.data!,
+            mimeType: part.inlineData.mimeType || 'image/png'
+          };
         }
       }
       throw new Error(`Failed to generate ${format}`);
     };
 
     // Generate Desktop (16:9)
-    const desktopArt = await generateWithReference('desktop');
+    const desktopResult = await generateWithReference('desktop');
     
     // Generate Print (4:3)
-    const printArt = await generateWithReference('print');
+    const printResult = await generateWithReference('print');
 
     return res.status(200).json({
       success: true,
       data: {
         phone: previewArt,  // Reuse the preview
-        desktop: desktopArt,
-        print: printArt
-      }
+        desktop: desktopResult.data,
+        print: printResult.data
+      },
+      mimeType: desktopResult.mimeType // All should be same format
     });
 
   } catch (error: any) {
