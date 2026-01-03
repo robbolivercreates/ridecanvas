@@ -123,23 +123,31 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
         draggable={false}
       />
       
-      {/* Before Image (clipped) - original photo with object-cover to fill */}
+      {/* Before Image (clipped) - centered with dark background */}
       <div 
-        className="absolute inset-0 overflow-hidden transition-none"
+        className="absolute inset-0 overflow-hidden transition-none bg-zinc-900"
         style={{ width: `${sliderPosition}%` }}
       >
-        <img 
-          src={`data:image/jpeg;base64,${beforeImage}`}
-          className="absolute inset-0 w-full h-full object-cover"
+        {/* Dark background container with centered image */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%' }}
+        >
+          <img 
+            src={`data:image/jpeg;base64,${beforeImage}`}
+            className="max-w-[85%] max-h-[70%] object-contain rounded-lg shadow-2xl"
+            alt="Before"
+            draggable={false}
+          />
+        </div>
+        {/* Subtle vignette effect */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
           style={{ 
-            width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%', 
-            maxWidth: 'none' 
+            width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%',
+            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)'
           }}
-          alt="Before"
-          draggable={false}
         />
-        {/* Gradient overlay on Before to blend edges */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/20" />
       </div>
       
       {/* Slider Line with glow effect */}
@@ -1050,9 +1058,12 @@ const App: React.FC = () => {
                 <button 
                   onClick={() => {
                     if (!previewArt || !analysis) return;
+                    // Get correct mimeType (stored during generation)
+                    const mimeType = (window as any).__lastArtMimeType || 'image/png';
+                    const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
                     const link = document.createElement('a');
-                    link.href = `data:image/png;base64,${previewArt}`;
-                    link.download = `GarageCanvas-${analysis.make}-${analysis.model}.png`;
+                    link.href = `data:${mimeType};base64,${previewArt}`;
+                    link.download = `GarageCanvas-${analysis.make}-${analysis.model}.${extension}`;
                     link.click();
                   }}
                   className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
@@ -1143,9 +1154,12 @@ const App: React.FC = () => {
                   <button 
                     onClick={() => {
                       if (!previewArt || !analysis) return;
+                      // Get correct mimeType (stored during generation)
+                      const mimeType = (window as any).__lastArtMimeType || 'image/png';
+                      const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
                       const link = document.createElement('a');
-                      link.href = `data:image/png;base64,${previewArt}`;
-                      link.download = `GarageCanvas-${analysis.make}-${analysis.model}-Phone.png`;
+                      link.href = `data:${mimeType};base64,${previewArt}`;
+                      link.download = `GarageCanvas-${analysis.make}-${analysis.model}-Phone.${extension}`;
                       link.click();
                     }}
                     className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
