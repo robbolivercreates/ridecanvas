@@ -39,7 +39,7 @@ const App: React.FC = () => {
   
   // Main visible options
   const [background, setBackground] = useState<BackgroundTheme>(BackgroundTheme.MOUNTAINS);
-  const [position, setPosition] = useState<PositionMode>(PositionMode.AS_PHOTOGRAPHED);
+  const [position, setPosition] = useState<PositionMode>(PositionMode.SIDE_PROFILE); // Default: Side Profile
   
   // Advanced options (collapsed)
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -487,7 +487,56 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* ─────────────── SCENE (Primary choice) ─────────────── */}
+            {/* ─────────────── ANGLE (First and most important choice) ─────────────── */}
+            <div className="mb-5">
+              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Choose angle</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
+                  className={`relative p-4 rounded-xl transition-all text-left ${
+                    position === PositionMode.SIDE_PROFILE
+                      ? 'bg-zinc-800 ring-2 ring-amber-500'
+                      : 'bg-zinc-900/50 hover:bg-zinc-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Aperture size={16} className={position === PositionMode.SIDE_PROFILE ? 'text-amber-500' : 'text-zinc-500'} />
+                    <span className="font-medium text-sm">Side Profile</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 leading-tight">
+                    Classic automotive art style. Clean, balanced composition.
+                  </p>
+                  {position === PositionMode.SIDE_PROFILE && (
+                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                      <Check size={10} className="text-black" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
+                  className={`relative p-4 rounded-xl transition-all text-left ${
+                    position === PositionMode.AS_PHOTOGRAPHED
+                      ? 'bg-zinc-800 ring-2 ring-amber-500'
+                      : 'bg-zinc-900/50 hover:bg-zinc-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Camera size={16} className={position === PositionMode.AS_PHOTOGRAPHED ? 'text-amber-500' : 'text-zinc-500'} />
+                    <span className="font-medium text-sm">As Photographed</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 leading-tight">
+                    Keep your photo's exact angle. Unique perspective.
+                  </p>
+                  {position === PositionMode.AS_PHOTOGRAPHED && (
+                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                      <Check size={10} className="text-black" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* ─────────────── SCENE ─────────────── */}
             <div className="mb-5">
               <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Choose a backdrop</label>
               <div className="grid grid-cols-3 gap-2">
@@ -520,47 +569,21 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* ─────────────── CUSTOMIZE (Collapsed - Angle, Condition, Stance) ─────────────── */}
+            {/* ─────────────── FINE-TUNE (Collapsed - Condition, Stance) ─────────────── */}
             <div className="mb-5">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="w-full flex items-center justify-between py-2.5 px-1 text-zinc-500 hover:text-zinc-300 transition-colors"
               >
-                <span className="text-xs uppercase tracking-wider font-medium">Customize</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-wider font-medium">Fine-tune</span>
+                  <span className="text-[10px] text-zinc-700">optional</span>
+                </div>
                 <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
               </button>
               
               {showAdvanced && (
                 <div className="pt-3 space-y-5 border-t border-zinc-900">
-                  {/* Angle */}
-                  <div>
-                    <label className="text-xs text-zinc-600 mb-2 block">Angle</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl transition-all text-sm ${
-                          position === PositionMode.AS_PHOTOGRAPHED
-                            ? 'bg-zinc-800 text-white'
-                            : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        <Camera size={16} />
-                        <span>As shot</span>
-                      </button>
-                      <button
-                        onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl transition-all text-sm ${
-                          position === PositionMode.SIDE_PROFILE
-                            ? 'bg-zinc-800 text-white'
-                            : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        <Aperture size={16} />
-                        <span>Side profile</span>
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Condition */}
                   <div>
                     <label className="text-xs text-zinc-600 mb-2 block">Look</label>
