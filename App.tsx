@@ -10,7 +10,7 @@ import {
   ArtStyle, BackgroundTheme, StanceStyle, 
   VehicleAnalysis, FidelityMode, PositionMode 
 } from './types';
-import { analyzeVehicle, generateArt, generateRemainingFormats, fileToGenerativePart, GeneratedArtSet } from './services/geminiService';
+import { analyzeVehicle, generateArt, generateRemainingFormats, generateArtSet, fileToGenerativePart, GeneratedArtSet } from './services/geminiService';
 import { redirectToCheckout, verifyPayment, checkPaymentStatus, clearPaymentParams } from './services/stripeService';
 
 enum Step {
@@ -33,8 +33,6 @@ const SCENES = [
 ];
 
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState('');
-  const [hasApiKey, setHasApiKey] = useState(false);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(Step.UPLOAD);
   
@@ -59,14 +57,7 @@ const App: React.FC = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  useEffect(() => {
-    const savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-      setHasApiKey(true);
-    }
-  }, []);
-
+  // Check for payment return on mount
   useEffect(() => {
     const { sessionId, cancelled } = checkPaymentStatus();
     if (sessionId) handlePaymentReturn(sessionId);
@@ -124,22 +115,22 @@ const App: React.FC = () => {
               state.fidelity || FidelityMode.CLEAN_BUILD, 
               state.position || PositionMode.AS_PHOTOGRAPHED,
               state.stance || StanceStyle.STOCK, 
-              state.selectedMods || [], 
-              apiKey || localStorage.getItem('gemini_api_key') || '',
+              state.selectedMods || [],
               (progress) => setStatusMessage(progress)
             );
             setArtSet(set);
           } else {
             // Fallback: generate all 3 (shouldn't happen normally)
             setStatusMessage("Creating all formats...");
-            const { generateArtSet } = await import('./services/geminiService');
             const set = await generateArtSet(
-              state.imageBase64, state.analysis, ArtStyle.POSTER, 
-              state.background, state.fidelity || FidelityMode.CLEAN_BUILD, 
+              state.imageBase64, 
+              state.analysis, 
+              ArtStyle.POSTER, 
+              state.background, 
+              state.fidelity || FidelityMode.CLEAN_BUILD, 
               state.position || PositionMode.AS_PHOTOGRAPHED,
               state.stance || StanceStyle.STOCK, 
-              state.selectedMods || [], 
-              apiKey || localStorage.getItem('gemini_api_key') || '',
+              state.selectedMods || [],
               (progress) => setStatusMessage(progress)
             );
             setArtSet(set);
@@ -162,14 +153,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleApiKeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (apiKey.trim()) {
-      localStorage.setItem('gemini_api_key', apiKey.trim());
-      setHasApiKey(true);
-    }
-  };
-
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       const base64 = await fileToGenerativePart(e.target.files[0]);
@@ -182,7 +165,8 @@ const App: React.FC = () => {
       setStatusMessage("Analyzing your ride...");
       
       try {
-        const res = await analyzeVehicle(base64, apiKey);
+        // API key is now handled server-side!
+        const res = await analyzeVehicle(base64);
         setAnalysis(res);
         setStep(Step.CUSTOMIZE);
       } catch (err) {
@@ -199,9 +183,10 @@ const App: React.FC = () => {
     setStatusMessage("Creating your artwork...");
     
     try {
+      // API key is now handled server-side!
       const art = await generateArt(
         imageBase64, analysis, ArtStyle.POSTER, background, 
-        fidelity, position, stance, selectedMods, apiKey
+        fidelity, position, stance, selectedMods
       );
       setPreviewArt(art);
       setStep(Step.PREVIEW);
@@ -312,40 +297,6 @@ const App: React.FC = () => {
       { id: StanceStyle.LOWERED, label: 'Lowered' },
     ];
   };
-
-  // ============ API KEY SCREEN ============
-  if (!hasApiKey) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-20 h-20 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20">
-            <Car className="text-white" size={40} />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">RideCanvas</h1>
-          <p className="text-zinc-500 mb-8">Turn your ride into wall-worthy art</p>
-          
-          <form onSubmit={handleApiKeySubmit} className="space-y-4">
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Paste Gemini API Key"
-              className="w-full px-5 py-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 transition-colors"
-            />
-            <button 
-              type="submit"
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity"
-            >
-              Get Started
-            </button>
-          </form>
-          <p className="text-zinc-600 text-xs mt-6">
-            Get your free API key at <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-amber-500 hover:underline">aistudio.google.com</a>
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // ============ MAIN APP ============
   return (
