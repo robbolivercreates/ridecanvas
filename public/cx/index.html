@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>GC Studio</title>
+    <meta name="description" content="Creator studio" />
+    
+    <!-- PWA Configuration - Points to /cx specific manifest -->
+    <link rel="manifest" href="/cx/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- iOS PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GC Studio" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              accent: '#D4AF37',
+              glass: {
+                bg: 'rgba(255, 255, 255, 0.04)',
+                border: 'rgba(255, 255, 255, 0.12)',
+                glow: 'rgba(255, 255, 255, 0.06)',
+              }
+            },
+            fontFamily: {
+              sans: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+              mono: ['SF Mono', 'Menlo', 'monospace'],
+            },
+            animation: {
+              'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+              'float': 'float 4s ease-in-out infinite',
+              'glow': 'glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              'pulse-soft': {
+                '0%, 100%': { opacity: '0.6' },
+                '50%': { opacity: '1' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-8px)' },
+              },
+              glow: {
+                '0%': { boxShadow: '0 0 20px rgba(212, 175, 55, 0.1)' },
+                '100%': { boxShadow: '0 0 40px rgba(212, 175, 55, 0.25)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      * { -webkit-font-smoothing: antialiased; }
+      
+      body {
+        background-color: #000000;
+        overflow-x: hidden;
+      }
+      
+      .liquid-glass {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%);
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), inset 0 -1px 1px rgba(0, 0, 0, 0.1), 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      
+      .liquid-glass-subtle {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      
+      .liquid-glass-active {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 0 30px rgba(212, 175, 55, 0.15);
+      }
+      
+      .specular-edge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        border-radius: 100%;
+      }
+      
+      .pill-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .pill-btn:active {
+        transform: scale(0.97);
+      }
+      
+      @keyframes scan {
+        0% { top: -20%; }
+        100% { top: 120%; }
+      }
+      .animate-scan {
+        animation: scan 2s ease-in-out infinite;
+      }
+      
+      .scanner-corners::before, .scanner-corners::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(212, 175, 55, 0.6);
+      }
+      .scanner-corners::before { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+      .scanner-corners::after { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+      .scanner-corners-bottom::before, .scanner-corners-bottom::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(212, 175, 55, 0.6);
+      }
+      .scanner-corners-bottom::before { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+      .scanner-corners-bottom::after { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+      
+      @keyframes slideUp {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+      
+      @keyframes pulse-border {
+        0%, 100% { border-color: rgba(212, 175, 55, 0.3); }
+        50% { border-color: rgba(212, 175, 55, 0.7); }
+      }
+      .animate-pulse-border { animation: pulse-border 1.5s ease-in-out infinite; }
+      
+      ::selection { background: rgba(212, 175, 55, 0.4); color: white; }
+      
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      
+      :root {
+        --safe-area-top: env(safe-area-inset-top, 0px);
+        --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-left: env(safe-area-inset-left, 0px);
+        --safe-area-right: env(safe-area-inset-right, 0px);
+      }
+      
+      body {
+        padding-top: var(--safe-area-top);
+        padding-bottom: var(--safe-area-bottom);
+        padding-left: var(--safe-area-left);
+        padding-right: var(--safe-area-right);
+        overscroll-behavior-y: contain;
+      }
+      
+      button, a { -webkit-tap-highlight-color: rgba(212, 175, 55, 0.2); }
+      
+      .btn-press {
+        transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, box-shadow 0.15s ease;
+      }
+      .btn-press:active { transform: scale(0.95); opacity: 0.85; }
+      
+      .btn-primary-press {
+        transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s ease, filter 0.12s ease;
+      }
+      .btn-primary-press:active { transform: scale(0.96); filter: brightness(0.9); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
+      
+      @keyframes bounce-in {
+        0% { transform: scale(0.8); opacity: 0; }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-bounce-in { animation: bounce-in 0.4s ease-out forwards; }
+      
+      @keyframes fadeSlideIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-slide-in { animation: fadeSlideIn 0.4s ease-out forwards; }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+    <link rel="stylesheet" href="/index.css">
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
