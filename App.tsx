@@ -4,7 +4,8 @@ import {
   Upload, Download, 
   RefreshCw, Mountain, Building2, Sparkles, Car,
   Smartphone, Monitor, Trees, Sun, Layers, Zap, Check,
-  ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive
+  ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive,
+  Scan
 } from 'lucide-react';
 import { 
   ArtStyle, BackgroundTheme, StanceStyle, 
@@ -52,6 +53,10 @@ const App: React.FC = () => {
   const [artSet, setArtSet] = useState<GeneratedArtSet | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   
+  // Scan animation state
+  const [scanStep, setScanStep] = useState(0);
+  const [showMods, setShowMods] = useState(false);
+  
   // Payment
   const [hasPaid, setHasPaid] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -73,11 +78,28 @@ const App: React.FC = () => {
       if (analysis.suggestedBackground) {
         setBackground(analysis.suggestedBackground);
       }
-      if (analysis.suggestedStance) {
-        setStance(analysis.suggestedStance);
-      }
+      // Stance default is always Stock - don't override
     }
   }, [analysis]);
+
+  // Progressive reveal during analysis
+  useEffect(() => {
+    if (step === Step.ANALYZING && analysis) {
+      // Reveal info progressively
+      const timers = [
+        setTimeout(() => setScanStep(1), 300),   // Make + Model
+        setTimeout(() => setScanStep(2), 800),   // Year + Color
+        setTimeout(() => setScanStep(3), 1300),  // Category
+        setTimeout(() => setScanStep(4), 1800),  // Accessories
+        setTimeout(() => {
+          setScanStep(5);
+          // Transition to customize after reveal
+          setTimeout(() => setStep(Step.CUSTOMIZE), 600);
+        }, 2300),
+      ];
+      return () => timers.forEach(clearTimeout);
+    }
+  }, [step, analysis]);
 
   const handlePaymentReturn = async (sessionId: string) => {
     setIsProcessingPayment(true);
@@ -100,12 +122,10 @@ const App: React.FC = () => {
           setStance(state.stance);
           setSelectedMods(state.selectedMods || []);
           
-          // Use the existing preview as the phone art (consistency!)
           const existingPreview = state.previewArt;
           
           if (existingPreview) {
             setStatusMessage("Creating remaining formats...");
-            // Generate only desktop and print, reusing the preview as phone
             const set = await generateRemainingFormats(
               state.imageBase64, 
               existingPreview,
@@ -120,7 +140,6 @@ const App: React.FC = () => {
             );
             setArtSet(set);
           } else {
-            // Fallback: generate all 3 (shouldn't happen normally)
             setStatusMessage("Creating all formats...");
             const set = await generateArtSet(
               state.imageBase64, 
@@ -161,14 +180,13 @@ const App: React.FC = () => {
       setArtSet(null);
       setHasPaid(false);
       setSelectedMods([]);
+      setScanStep(0);
       setStep(Step.ANALYZING);
-      setStatusMessage("Analyzing your ride...");
       
       try {
-        // API key is now handled server-side!
         const res = await analyzeVehicle(base64);
         setAnalysis(res);
-        setStep(Step.CUSTOMIZE);
+        // Don't transition yet - let the scan animation play
       } catch (err) {
         console.error('Analysis error:', err);
         setStep(Step.UPLOAD);
@@ -183,7 +201,6 @@ const App: React.FC = () => {
     setStatusMessage("Creating your artwork...");
     
     try {
-      // API key is now handled server-side!
       const art = await generateArt(
         imageBase64, analysis, ArtStyle.POSTER, background, 
         fidelity, position, stance, selectedMods
@@ -202,10 +219,9 @@ const App: React.FC = () => {
     setIsProcessingPayment(true);
     
     try {
-      // Save state including the preview art for consistency
       localStorage.setItem('ridecanvas_pending_art', JSON.stringify({
         imageBase64, analysis, background, fidelity, position, stance, selectedMods,
-        previewArt // Save the preview so we can reuse it!
+        previewArt
       }));
       
       await redirectToCheckout(
@@ -235,7 +251,6 @@ const App: React.FC = () => {
       const zip = new JSZip();
       const vehicleName = `${analysis.year}-${analysis.make}-${analysis.model}`.replace(/\s+/g, '-');
       
-      // Convert base64 to blob and add to zip
       const addToZip = (base64: string, filename: string) => {
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);
@@ -280,7 +295,9 @@ const App: React.FC = () => {
     setAnalysis(null);
     setHasPaid(false);
     setShowAdvanced(false);
+    setShowMods(false);
     setSelectedMods([]);
+    setScanStep(0);
     setStep(Step.UPLOAD);
   };
 
@@ -297,6 +314,19 @@ const App: React.FC = () => {
       { id: StanceStyle.LOWERED, label: 'Lowered' },
     ];
   };
+
+  // Info Pill Component for scan animation
+  const InfoPill = ({ visible, delay, children }: { visible: boolean; delay: number; children: React.ReactNode }) => (
+    <div 
+      className={`transition-all duration-400 ${visible ? 'animate-slide-up' : 'opacity-0 translate-y-2'}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="bg-black/70 backdrop-blur-sm border border-amber-500/30 rounded-lg px-3 py-1.5 text-xs font-medium text-white/90 flex items-center gap-2">
+        <Check size={12} className="text-amber-500" />
+        {children}
+      </div>
+    </div>
+  );
 
   // ============ MAIN APP ============
   return (
@@ -330,8 +360,8 @@ const App: React.FC = () => {
         {step === Step.UPLOAD && (
           <div className="pt-16">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Upload Your Ride</h1>
-              <p className="text-zinc-500 text-sm">Side profile works best for accuracy</p>
+              <h1 className="text-2xl font-bold mb-2">Drop Your Ride</h1>
+              <p className="text-zinc-500 text-sm">Side shots look best. Any angle works.</p>
             </div>
             
             <label className="block aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 transition-all cursor-pointer bg-zinc-900/30 hover:bg-zinc-900/50 flex flex-col items-center justify-center group">
@@ -339,17 +369,66 @@ const App: React.FC = () => {
               <div className="w-16 h-16 rounded-2xl bg-zinc-800 group-hover:bg-amber-500/20 flex items-center justify-center mb-4 transition-colors">
                 <Upload size={28} className="text-zinc-500 group-hover:text-amber-500 transition-colors" />
               </div>
-              <span className="text-zinc-300 font-medium">Tap to upload</span>
+              <span className="text-zinc-300 font-medium">Drop or tap</span>
               <span className="text-zinc-600 text-sm mt-1">JPG, PNG, HEIC</span>
             </label>
           </div>
         )}
 
-        {/* ============ ANALYZING ============ */}
-        {step === Step.ANALYZING && (
-          <div className="pt-32 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-zinc-800 border-t-amber-500 animate-spin" />
-            <p className="text-zinc-400">{statusMessage}</p>
+        {/* ============ ANALYZING (with scan animation) ============ */}
+        {step === Step.ANALYZING && imageBase64 && (
+          <div className="pt-4">
+            {/* Image with scan overlay */}
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-4 border-2 border-amber-500/30 animate-pulse-border scanner-corners scanner-corners-bottom">
+              <img 
+                src={`data:image/jpeg;base64,${imageBase64}`}
+                className="w-full h-full object-cover"
+                alt="Your vehicle"
+              />
+              
+              {/* Dark overlay */}
+              <div className="absolute inset-0 bg-black/40" />
+              
+              {/* Scan line */}
+              <div className="absolute left-0 right-0 h-1 bg-gradient-to-b from-transparent via-amber-500/80 to-transparent animate-scan" style={{ top: '0%' }}>
+                <div className="absolute inset-x-0 h-20 bg-gradient-to-b from-amber-500/20 to-transparent" />
+              </div>
+              
+              {/* Scanning indicator */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                <Scan size={14} className="text-amber-500 animate-pulse" />
+                <span className="text-xs font-medium text-white/80">Scanning...</span>
+              </div>
+              
+              {/* Progressive info reveals */}
+              <div className="absolute bottom-3 left-3 right-3 space-y-2">
+                {analysis && (
+                  <>
+                    <InfoPill visible={scanStep >= 1} delay={0}>
+                      {analysis.make} {analysis.model}
+                    </InfoPill>
+                    <InfoPill visible={scanStep >= 2} delay={100}>
+                      {analysis.year} • {analysis.color}
+                    </InfoPill>
+                    <InfoPill visible={scanStep >= 3} delay={200}>
+                      {analysis.isOffroad ? '4×4 Off-Road' : analysis.category}
+                    </InfoPill>
+                    {analysis.installedAccessories && analysis.installedAccessories.length > 0 && (
+                      <InfoPill visible={scanStep >= 4} delay={300}>
+                        {analysis.installedAccessories.slice(0, 3).join(' • ')}
+                      </InfoPill>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {!analysis && (
+              <div className="text-center">
+                <div className="w-8 h-8 mx-auto mb-3 rounded-full border-2 border-zinc-700 border-t-amber-500 animate-spin" />
+                <p className="text-zinc-500 text-sm">Analyzing your ride...</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -365,7 +444,7 @@ const App: React.FC = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span className="text-sm font-medium">{analysis.year} {analysis.make} {analysis.model}</span>
                 {analysis.isOffroad && (
                   <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">4×4</span>
@@ -373,38 +452,9 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* ─────────────── POSITION ─────────────── */}
+            {/* ─────────────── SCENE (Primary choice) ─────────────── */}
             <div className="mb-5">
-              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Angle</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                    position === PositionMode.AS_PHOTOGRAPHED
-                      ? 'bg-white text-black'
-                      : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
-                  }`}
-                >
-                  <Camera size={18} />
-                  <span className="text-sm font-medium">As photographed</span>
-                </button>
-                <button
-                  onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                    position === PositionMode.SIDE_PROFILE
-                      ? 'bg-white text-black'
-                      : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
-                  }`}
-                >
-                  <Aperture size={18} />
-                  <span className="text-sm font-medium">Side profile</span>
-                </button>
-              </div>
-            </div>
-
-            {/* ─────────────── SCENE ─────────────── */}
-            <div className="mb-5">
-              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Scene</label>
+              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Choose a backdrop</label>
               <div className="grid grid-cols-3 gap-2">
                 {SCENES.map((scene) => {
                   const isSelected = background === scene.id;
@@ -435,52 +485,53 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* ─────────────── VIRTUAL MODS (Subtle chips from AI) ─────────────── */}
-            {analysis.popularMods && analysis.popularMods.length > 0 && (
-              <div className="mb-5">
-                <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">
-                  Add upgrades <span className="text-zinc-700">(optional)</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.popularMods.slice(0, 6).map((mod) => {
-                    const isSelected = selectedMods.includes(mod.name);
-                    return (
-                      <button
-                        key={mod.id || mod.name}
-                        onClick={() => toggleMod(mod.name)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                          isSelected
-                            ? 'bg-amber-500 text-black'
-                            : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
-                        }`}
-                      >
-                        {isSelected && <span className="mr-1">✓</span>}
-                        {mod.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ─────────────── ADVANCED OPTIONS ─────────────── */}
+            {/* ─────────────── CUSTOMIZE (Collapsed - Angle, Condition, Stance) ─────────────── */}
             <div className="mb-5">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between py-2 text-zinc-600 hover:text-zinc-400 transition-colors"
+                className="w-full flex items-center justify-between py-2.5 px-1 text-zinc-500 hover:text-zinc-300 transition-colors"
               >
-                <span className="text-xs uppercase tracking-wider">Fine-tune</span>
+                <span className="text-xs uppercase tracking-wider font-medium">Customize</span>
                 <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
               </button>
               
               {showAdvanced && (
-                <div className="pt-3 space-y-4 border-t border-zinc-900">
+                <div className="pt-3 space-y-5 border-t border-zinc-900">
+                  {/* Angle */}
+                  <div>
+                    <label className="text-xs text-zinc-600 mb-2 block">Angle</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl transition-all text-sm ${
+                          position === PositionMode.AS_PHOTOGRAPHED
+                            ? 'bg-zinc-800 text-white'
+                            : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        <Camera size={16} />
+                        <span>As shot</span>
+                      </button>
+                      <button
+                        onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl transition-all text-sm ${
+                          position === PositionMode.SIDE_PROFILE
+                            ? 'bg-zinc-800 text-white'
+                            : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        <Aperture size={16} />
+                        <span>Side profile</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Condition */}
                   <div>
-                    <label className="text-xs text-zinc-600 mb-2 block">Condition</label>
+                    <label className="text-xs text-zinc-600 mb-2 block">Look</label>
                     <div className="flex gap-2">
                       {[
-                        { id: FidelityMode.EXACT_MATCH, label: 'As-Is', desc: 'dirt & all' },
+                        { id: FidelityMode.EXACT_MATCH, label: 'As-is', desc: 'dirt & all' },
                         { id: FidelityMode.CLEAN_BUILD, label: 'Clean', desc: 'washed' },
                         { id: FidelityMode.FACTORY_FRESH, label: 'Stock', desc: 'no mods' },
                       ].map((opt) => (
@@ -494,7 +545,7 @@ const App: React.FC = () => {
                           }`}
                         >
                           <div className="text-sm font-medium">{opt.label}</div>
-                          <div className="text-[10px] opacity-60">{opt.desc}</div>
+                          <div className="text-[10px] opacity-50">{opt.desc}</div>
                         </button>
                       ))}
                     </div>
@@ -508,7 +559,7 @@ const App: React.FC = () => {
                         <button
                           key={opt.id}
                           onClick={() => setStance(opt.id)}
-                          className={`flex-1 py-2 px-3 rounded-xl text-sm transition-all ${
+                          className={`flex-1 py-2.5 px-3 rounded-xl text-sm transition-all ${
                             stance === opt.id
                               ? 'bg-zinc-800 text-white font-medium'
                               : 'bg-zinc-900/50 text-zinc-600 hover:text-zinc-400'
@@ -523,15 +574,60 @@ const App: React.FC = () => {
               )}
             </div>
 
+            {/* ─────────────── DREAM MODS (Last, optional) ─────────────── */}
+            {analysis.popularMods && analysis.popularMods.length > 0 && (
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowMods(!showMods)}
+                  className="w-full flex items-center justify-between py-2.5 px-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wider font-medium">Dream mods</span>
+                    <span className="text-[10px] text-zinc-700">optional</span>
+                  </div>
+                  <ChevronDown size={14} className={`transition-transform ${showMods ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showMods && (
+                  <div className="pt-3 border-t border-zinc-900">
+                    <div className="flex flex-wrap gap-1.5">
+                      {analysis.popularMods.slice(0, 6).map((mod) => {
+                        const isSelected = selectedMods.includes(mod.name);
+                        return (
+                          <button
+                            key={mod.id || mod.name}
+                            onClick={() => toggleMod(mod.name)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              isSelected
+                                ? 'bg-amber-500 text-black'
+                                : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                            }`}
+                          >
+                            {isSelected && <span className="mr-1">✓</span>}
+                            {mod.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedMods.length > 0 && (
+                      <p className="text-[10px] text-amber-500/80 mt-2">
+                        +{selectedMods.length} mod{selectedMods.length > 1 ? 's' : ''} will be added
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Generate Button */}
             <button 
               onClick={handleGenerate}
               className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
             >
               <Sparkles size={20} />
-              Generate Preview
+              Create Art
             </button>
-            <p className="text-center text-[11px] text-zinc-600 mt-3">Free preview • Pay only for HD downloads</p>
+            <p className="text-center text-[11px] text-zinc-600 mt-3">Free preview. $3.99 for 4K pack.</p>
           </div>
         )}
 
@@ -616,7 +712,7 @@ const App: React.FC = () => {
               onClick={() => { setPreviewArt(null); setStep(Step.CUSTOMIZE); }}
               className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
             >
-              ← Adjust & regenerate free
+              ← Try different settings
             </button>
           </div>
         )}

@@ -110,11 +110,71 @@
       
       /* Scanning animation */
       @keyframes scan {
-        0% { transform: translateY(-100%); }
-        100% { transform: translateY(100%); }
+        0% { top: -20%; }
+        100% { top: 120%; }
       }
       .animate-scan {
-        animation: scan 2s linear infinite;
+        animation: scan 2s ease-in-out infinite;
+      }
+      
+      /* Corner brackets for scanner effect */
+      .scanner-corners::before,
+      .scanner-corners::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(212, 175, 55, 0.6);
+      }
+      .scanner-corners::before {
+        top: 12px;
+        left: 12px;
+        border-right: none;
+        border-bottom: none;
+      }
+      .scanner-corners::after {
+        top: 12px;
+        right: 12px;
+        border-left: none;
+        border-bottom: none;
+      }
+      .scanner-corners-bottom::before,
+      .scanner-corners-bottom::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(212, 175, 55, 0.6);
+      }
+      .scanner-corners-bottom::before {
+        bottom: 12px;
+        left: 12px;
+        border-right: none;
+        border-top: none;
+      }
+      .scanner-corners-bottom::after {
+        bottom: 12px;
+        right: 12px;
+        border-left: none;
+        border-top: none;
+      }
+      
+      /* Info pill animation */
+      @keyframes slideUp {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-slide-up {
+        animation: slideUp 0.4s ease-out forwards;
+      }
+      
+      /* Pulse border during scan */
+      @keyframes pulse-border {
+        0%, 100% { border-color: rgba(212, 175, 55, 0.3); }
+        50% { border-color: rgba(212, 175, 55, 0.7); }
+      }
+      .animate-pulse-border {
+        animation: pulse-border 1.5s ease-in-out infinite;
       }
       
       /* Selection */
