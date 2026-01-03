@@ -61,6 +61,9 @@ const App: React.FC = () => {
   const [hasPaid, setHasPaid] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // DEV MODE - bypass paywall with ?dev=1
+  const isDevMode = new URLSearchParams(window.location.search).get('dev') === '1';
 
   // Check for payment return on mount
   useEffect(() => {
@@ -232,6 +235,38 @@ const App: React.FC = () => {
       console.error('Checkout error:', err);
       setIsProcessingPayment(false);
       alert("Checkout failed. Please try again.");
+    }
+  };
+
+  // DEV MODE: Skip payment and generate all formats
+  const handleDevUnlock = async () => {
+    if (!imageBase64 || !analysis || !previewArt) return;
+    setIsProcessingPayment(true);
+    setStep(Step.GENERATING);
+    setStatusMessage("DEV MODE: Generating all formats...");
+    
+    try {
+      const set = await generateRemainingFormats(
+        imageBase64, 
+        previewArt,
+        analysis, 
+        ArtStyle.POSTER, 
+        background, 
+        fidelity, 
+        position,
+        stance, 
+        selectedMods,
+        (progress) => setStatusMessage(`DEV: ${progress}`)
+      );
+      setArtSet(set);
+      setHasPaid(true);
+      setStep(Step.COMPLETE);
+    } catch (err) {
+      console.error('Dev generation error:', err);
+      alert("Generation failed.");
+      setStep(Step.PREVIEW);
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -705,6 +740,17 @@ const App: React.FC = () => {
                   </>
                 )}
               </button>
+              
+              {/* DEV MODE BUTTON */}
+              {isDevMode && (
+                <button 
+                  onClick={handleDevUnlock}
+                  disabled={isProcessingPayment}
+                  className="w-full py-3 mt-2 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  🔓 DEV: Skip Payment
+                </button>
+              )}
             </div>
 
             {/* Adjust Button */}
