@@ -310,11 +310,24 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     aspectRatio: "9:16",
     orientation: "VERTICAL/PORTRAIT (9:16, taller than wide)",
     composition: `
-      PHONE WALLPAPER COMPOSITION:
-      - Vehicle positioned in LOWER THIRD (60-70% down from top)
-      - Leave LOTS of sky/space above for phone clock and notch
-      - Car size: 35-40% of image width
-      - Perfect for mobile lock screen
+      PHONE WALLPAPER COMPOSITION - EPIC LANDSCAPE STYLE:
+      ═══════════════════════════════════════════════════════════
+      ⚠️ THE VEHICLE MUST BE SMALL - THIS IS CRITICAL ⚠️
+      ═══════════════════════════════════════════════════════════
+      
+      Think: National Geographic landscape photo with a tiny vehicle in the distance.
+      Think: Photography from 80-100 meters away.
+      Think: Epic adventure poster where the SCENERY is the hero.
+      
+      VEHICLE SIZE: Maximum 25-28% of image WIDTH (small!)
+      VEHICLE POSITION: Center-lower area (55-60% down from top)
+      
+      The vehicle should feel like a small object in a VAST landscape.
+      Lots of sky above for phone clock, widgets, and notch.
+      The background/scenery should dominate the composition.
+      
+      This creates dramatic wallpaper with room for phone UI elements.
+      ═══════════════════════════════════════════════════════════
     `,
     resolution: "2160x3840 (4K vertical - Ultra HD quality)"
   },
