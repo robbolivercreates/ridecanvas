@@ -231,7 +231,7 @@ const App: React.FC = () => {
       clearPaymentParams();
       
       if (result.success) {
-        const savedState = localStorage.getItem('ridecanvas_pending_art');
+        const savedState = localStorage.getItem('garagecanvas_pending_art');
         if (savedState) {
           const state = JSON.parse(savedState);
           setImageBase64(state.imageBase64);
@@ -278,7 +278,7 @@ const App: React.FC = () => {
           setPreviewArt(existingPreview);
           setHasPaid(true);
           setStep(Step.COMPLETE);
-          localStorage.removeItem('ridecanvas_pending_art');
+          localStorage.removeItem('garagecanvas_pending_art');
         }
       } else {
         throw new Error('Payment not verified');
@@ -339,7 +339,7 @@ const App: React.FC = () => {
     setIsProcessingPayment(true);
     
     try {
-      localStorage.setItem('ridecanvas_pending_art', JSON.stringify({
+      localStorage.setItem('garagecanvas_pending_art', JSON.stringify({
         imageBase64, analysis, background, fidelity, position, stance, selectedMods,
         previewArt
       }));
@@ -396,7 +396,7 @@ const App: React.FC = () => {
     
     const link = document.createElement('a');
     link.href = `data:${mimeType};base64,${artSet[format]}`;
-    link.download = `RideCanvas-${analysis.make}-${analysis.model}-${format}-4K.${extension}`;
+    link.download = `GarageCanvas-${analysis.make}-${analysis.model}-${format}-4K.${extension}`;
     link.click();
   };
 
@@ -421,15 +421,15 @@ const App: React.FC = () => {
         zip.file(filename, byteArray);
       };
       
-      addToZip(artSet.phone, `${vehicleName}-Phone-4K.${extension}`);
-      addToZip(artSet.desktop, `${vehicleName}-Desktop-4K.${extension}`);
-      addToZip(artSet.print, `${vehicleName}-Print-4K.${extension}`);
+      addToZip(artSet.phone, `GarageCanvas-${vehicleName}-Phone-4K.${extension}`);
+      addToZip(artSet.desktop, `GarageCanvas-${vehicleName}-Desktop-4K.${extension}`);
+      addToZip(artSet.print, `GarageCanvas-${vehicleName}-Print-4K.${extension}`);
       
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `RideCanvas-${vehicleName}-4K-Pack.zip`;
+      link.download = `GarageCanvas-${vehicleName}-4K-Pack.zip`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -499,7 +499,7 @@ const App: React.FC = () => {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
               <Car size={16} className="text-white" />
             </div>
-            <span className="font-semibold text-sm">RideCanvas</span>
+            <span className="font-semibold text-sm">TheGarageCanvas</span>
           </div>
           {step !== Step.UPLOAD && (
             <button 
@@ -520,8 +520,8 @@ const App: React.FC = () => {
         {step === Step.UPLOAD && (
           <div className="pt-16">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Drop Your Ride</h1>
-              <p className="text-zinc-500 text-sm">Side shots look best. Any angle works.</p>
+              <h1 className="text-2xl font-bold mb-2">Upload Your Ride</h1>
+              <p className="text-zinc-500 text-sm">Side views look best. Any angle works.</p>
             </div>
             
             <label className="block aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 transition-all cursor-pointer bg-zinc-900/30 hover:bg-zinc-900/50 flex flex-col items-center justify-center group">
@@ -529,7 +529,7 @@ const App: React.FC = () => {
               <div className="w-16 h-16 rounded-2xl bg-zinc-800 group-hover:bg-amber-500/20 flex items-center justify-center mb-4 transition-colors">
                 <Upload size={28} className="text-zinc-500 group-hover:text-amber-500 transition-colors" />
               </div>
-              <span className="text-zinc-300 font-medium">Drop or tap</span>
+              <span className="text-zinc-300 font-medium">Tap to upload</span>
               <span className="text-zinc-600 text-sm mt-1">JPG, PNG, HEIC</span>
             </label>
           </div>
@@ -856,7 +856,7 @@ const App: React.FC = () => {
                     if (!previewArt || !analysis) return;
                     const link = document.createElement('a');
                     link.href = `data:image/png;base64,${previewArt}`;
-                    link.download = `RideCanvas-${analysis.make}-${analysis.model}.png`;
+                    link.download = `GarageCanvas-${analysis.make}-${analysis.model}.png`;
                     link.click();
                   }}
                   className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
@@ -944,18 +944,18 @@ const App: React.FC = () => {
                   {/* DEV MODE BUTTONS */}
                   {isDevMode && (
                     <div className="space-y-2 mt-2">
-                      <button 
-                        onClick={() => {
-                          if (!previewArt || !analysis) return;
-                          const link = document.createElement('a');
-                          link.href = `data:image/png;base64,${previewArt}`;
-                          link.download = `RideCanvas-${analysis.make}-${analysis.model}-Phone.png`;
-                          link.click();
-                        }}
-                        className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        📱 DEV: Download Phone Only
-                      </button>
+                  <button 
+                    onClick={() => {
+                      if (!previewArt || !analysis) return;
+                      const link = document.createElement('a');
+                      link.href = `data:image/png;base64,${previewArt}`;
+                      link.download = `GarageCanvas-${analysis.make}-${analysis.model}-Phone.png`;
+                      link.click();
+                    }}
+                    className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    📱 DEV: Download Phone Only
+                  </button>
                       <button 
                         onClick={handleDevUnlock}
                         disabled={isProcessingPayment}
