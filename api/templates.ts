@@ -289,21 +289,32 @@ ${accessories}
 ${mods}
 
 ═══════════════════════════════════════════════════════════
-⚠️ CRITICAL: DO NOT INVENT OR ADD OBJECTS ⚠️
+⚠️ CRITICAL: 100% FAITHFUL REPRODUCTION ⚠️
 ═══════════════════════════════════════════════════════════
 
-ONLY reproduce what is ACTUALLY VISIBLE in the source photo.
+GOLDEN RULE: "If it's in the photo, include it. If it's NOT in the photo, DON'T invent it."
 
-DO NOT ADD:
-✗ Bicycles, kayaks, surfboards, or any cargo - unless CLEARLY visible in the source
+REPRODUCE EXACTLY:
+✓ WHEELS: Copy the exact wheel design, color, and style from the source
+  - NO white lettering on tires unless clearly visible in source
+  - NO colored center caps unless visible in source
+  - NO aftermarket wheel style if source has stock wheels
+✓ DIRT/MUD: Same amount and intensity as source - don't exaggerate or minimize
+✓ TEXT/LOGOS: Reproduce exactly as shown (e.g., "BEACH", "California", badges)
+  - If you can't read it clearly, reproduce it as best you can
+✓ ACCESSORIES: Include ALL visible accessories exactly as they appear
+✓ COLORS: Exact vehicle colors from source
+
+DO NOT INVENT:
+✗ White sidewall lettering on tires (common AI mistake!)
+✗ Red/colored wheel center caps that don't exist
+✗ Extra dirt, mud, or scratches beyond what's shown
+✗ Bicycles, cargo, or items not in the source
 ✗ People, animals, or figures
-✗ Additional gear or equipment not shown in the photo
-✗ Logos, text, or badges that don't exist in the source
+✗ Logos, badges, or text that don't exist
 
-If you see an EMPTY rack (bike rack, roof rack, etc.), draw it EMPTY.
-If a rack has items attached, reproduce ONLY those exact items.
-
-The goal is FAITHFUL REPRODUCTION of the source vehicle, not creative interpretation.
+If rack is EMPTY in source → draw it EMPTY
+If rack has items → reproduce ONLY those exact items
 
 ═══════════════════════════════════════════════════════════
 
@@ -326,10 +337,10 @@ interface FormatConfig {
 
 const FORMAT_CONFIGS: Record<string, FormatConfig> = {
   phone: {
-    aspectRatio: "9:16",
-    orientation: "VERTICAL/PORTRAIT (9:16, taller than wide)",
+    aspectRatio: "9:19.5",
+    orientation: "VERTICAL/PORTRAIT (9:19.5, extra tall for modern phones)",
     composition: `
-      PHONE WALLPAPER COMPOSITION - EPIC LANDSCAPE STYLE:
+      PHONE WALLPAPER COMPOSITION - MODERN SMARTPHONE FORMAT:
       ═══════════════════════════════════════════════════════════
       ⚠️ CRITICAL REQUIREMENTS ⚠️
       ═══════════════════════════════════════════════════════════
@@ -341,21 +352,21 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
          ✗ The image must be PURE ARTWORK with NO interface elements
          
       2. VEHICLE SIZE AND POSITION:
-         - Vehicle size: 28-32% of image WIDTH
-         - Vehicle position: UPPER-CENTER (around 40-45% from top)
-         - The vehicle should be in the MIDDLE or SLIGHTLY ABOVE middle
-         - NOT in the bottom third - avoid placing too low
-         - Equal visual weight above and below the vehicle
+         - Vehicle size: 30-35% of image WIDTH
+         - Vehicle position: TRUE CENTER (exactly 50% from top)
+         - The vehicle must be PERFECTLY CENTERED vertically
+         - EQUAL space above and below the vehicle
+         - This allows room for phone clock at top AND app dock at bottom
          
       3. COMPOSITION:
          - Epic landscape with the vehicle as a focal point
-         - CENTERED composition - vehicle in the heart of the scene
-         - Sky/mountains above, ground/terrain below
-         - Think: adventure poster with balanced framing
+         - PERFECTLY CENTERED - vehicle in the exact middle
+         - Generous margins on all sides (top, bottom, left, right)
+         - Think: poster with the subject floating in the center
          
       ═══════════════════════════════════════════════════════════
     `,
-    resolution: "2160x3840 (4K vertical - Ultra HD quality)"
+    resolution: "1080x2340 (Modern smartphone - iPhone/Android)"
   },
   desktop: {
     aspectRatio: "16:9",
