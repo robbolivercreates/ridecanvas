@@ -13,44 +13,56 @@ import { VehicleAnalysis, BackgroundTheme, FidelityMode, PositionMode, StanceSty
 // FILE UTILITIES
 // ============================================================================
 
-// Maximum image dimensions to avoid API limits (Gemini has ~20MB limit)
-const MAX_IMAGE_DIMENSION = 2048;
-const MAX_IMAGE_SIZE_MB = 4;
+// Vercel Serverless has a 4.5MB request body limit
+// We need to keep images well under this limit
+const MAX_IMAGE_DIMENSION = 1400; // Reduced from 2048
+const MAX_PAYLOAD_SIZE_BYTES = 3 * 1024 * 1024; // 3MB max to stay safe under 4.5MB limit
 
 /**
- * Compress and resize image if needed
- * This prevents "image not clear" errors from oversized images
+ * Compress and resize image to fit within Vercel's payload limits
+ * Uses iterative compression if needed
  */
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
     
     img.onload = () => {
       let { width, height } = img;
       
-      // Calculate new dimensions if image is too large
+      // Calculate new dimensions - always resize to max dimension
       if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
         const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
         width = Math.round(width * ratio);
         height = Math.round(height * ratio);
       }
       
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       canvas.width = width;
       canvas.height = height;
-      
-      // Draw and compress
       ctx?.drawImage(img, 0, 0, width, height);
       
-      // Use JPEG with quality adjustment based on file size
-      let quality = 0.85;
-      if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-        quality = 0.7; // More compression for very large files
+      // Start with good quality and reduce if needed
+      let quality = 0.75;
+      let base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+      
+      // Iteratively reduce quality if still too large
+      while (base64Data.length > MAX_PAYLOAD_SIZE_BYTES && quality > 0.3) {
+        quality -= 0.1;
+        base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+        console.log(`Compressing: quality=${quality.toFixed(1)}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
       }
       
-      const base64String = canvas.toDataURL('image/jpeg', quality);
-      const base64Data = base64String.split(',')[1];
+      // If still too large, reduce dimensions further
+      if (base64Data.length > MAX_PAYLOAD_SIZE_BYTES) {
+        const smallerRatio = 0.7;
+        canvas.width = Math.round(width * smallerRatio);
+        canvas.height = Math.round(height * smallerRatio);
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+        console.log(`Final resize: ${canvas.width}x${canvas.height}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
+      }
+      
       resolve(base64Data);
     };
     
@@ -67,14 +79,12 @@ const compressImage = (file: File): Promise<string> => {
 };
 
 export const fileToGenerativePart = async (file: File): Promise<string> => {
-  // Check if compression is needed
-  const needsCompression = 
-    file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024 || // Larger than 4MB
-    file.type === 'image/heic' || 
-    file.type === 'image/heif';
-  
-  if (needsCompression || file.type.startsWith('image/')) {
-    // Always use canvas for consistent handling
+  // Always compress images to ensure they fit within Vercel limits
+  if (file.type.startsWith('image/') || 
+      file.type === 'image/heic' || 
+      file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') ||
+      file.name.toLowerCase().endsWith('.heif')) {
     return compressImage(file);
   }
   
