@@ -310,24 +310,12 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     aspectRatio: "9:16",
     orientation: "VERTICAL/PORTRAIT (9:16, taller than wide)",
     composition: `
-      ═══════════════════════════════════════════════════════════
-      📱 PHONE WALLPAPER - VEHICLE SIZE IS CRITICAL
-      ═══════════════════════════════════════════════════════════
-      
-      🚨 THE VEHICLE MUST BE SMALL - LIKE A DISTANT LANDSCAPE PHOTO 🚨
-      
-      Imagine photographing from 80-100 METERS AWAY.
-      Think National Geographic landscape shot with a tiny vehicle.
-      The car should feel DWARFED by the vast scenery.
-      
-      VEHICLE SIZE: 20-25% of image width. NO LARGER!
-      VEHICLE POSITION: Center-lower (55-60% down from top)
-      
-      The vast majority of the image should be SKY and SCENERY.
-      Leave TONS of space above for phone clock, notch, and widgets.
-      
-      This is a LANDSCAPE WITH A CAR, not a CAR WITH A BACKGROUND.
-      ═══════════════════════════════════════════════════════════
+      PHONE WALLPAPER COMPOSITION:
+      - Vehicle positioned in LOWER THIRD (55-60% down from top)
+      - Leave LOTS of sky/space above for phone clock and notch
+      - Car size: 25-30% of image width (small, like a distant landscape photo)
+      - Perfect for mobile lock screen
+      - Vast scenery with small vehicle - landscape photography feel
     `,
     resolution: "2160x3840 (4K vertical - Ultra HD quality)"
   },
@@ -335,21 +323,11 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     aspectRatio: "16:9",
     orientation: "HORIZONTAL/LANDSCAPE (16:9, wider than tall)",
     composition: `
-      ═══════════════════════════════════════════════════════════
-      🖥️ DESKTOP WALLPAPER - VEHICLE SIZE IS CRITICAL  
-      ═══════════════════════════════════════════════════════════
-      
-      Think wide-angle PANORAMIC landscape photography.
-      The vehicle should feel small against a vast horizon.
-      
-      VEHICLE SIZE: 30-35% of image width. NO LARGER!
-      VEHICLE POSITION: Center-lower (55% from top)
-      
-      Wide panoramic feel with expansive scenery.
-      Space on sides for desktop icons and widgets.
-      
-      This is a LANDSCAPE WITH A CAR, not a CAR WITH A BACKGROUND.
-      ═══════════════════════════════════════════════════════════
+      DESKTOP WALLPAPER COMPOSITION:
+      - Vehicle centered, slightly lower (55% from top)
+      - Wide panoramic feel
+      - Car size: 30-35% of image width
+      - Space on sides for desktop icons
     `,
     resolution: "3840x2160 (4K UHD - Ultra HD quality)"
   },
@@ -357,19 +335,11 @@ const FORMAT_CONFIGS: Record<string, FormatConfig> = {
     aspectRatio: "4:3",
     orientation: "HORIZONTAL/LANDSCAPE (4:3, classic photo ratio)",
     composition: `
-      ═══════════════════════════════════════════════════════════
-      🖼️ PRINT - BALANCED COMPOSITION
-      ═══════════════════════════════════════════════════════════
-      
-      Classic automotive art composition for framing/printing.
-      Vehicle is the subject but still leaves room to breathe.
-      
-      VEHICLE SIZE: 40% of image width
-      VEHICLE POSITION: Centered (50% from top)
-      
-      Balanced margins for professional framing.
-      High detail for large format printing.
-      ═══════════════════════════════════════════════════════════
+      PRINT COMPOSITION:
+      - Vehicle centered (50% from top)
+      - Balanced margins for framing
+      - Car size: 40% of image width
+      - High detail for large format printing
     `,
     resolution: "4096x3072 (4K print quality - suitable for large format printing)"
   }
