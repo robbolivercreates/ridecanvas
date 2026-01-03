@@ -407,11 +407,54 @@ const App: React.FC = () => {
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === '1';
   
   // DEMO MODE - clean interface for recording content
-  // Works with ?demo=1 OR secret path /cx (for PWA installation) OR localStorage flag
+  // Activated by: ?demo=1 OR /cx path OR localStorage flag OR Easter Egg (5 taps on logo)
+  const [easterEggActive, setEasterEggActive] = useState(
+    localStorage.getItem('gc_demo_mode') === 'true'
+  );
+  const [logoTapCount, setLogoTapCount] = useState(0);
+  const [showEasterEggToast, setShowEasterEggToast] = useState(false);
+  const logoTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1' 
     || window.location.pathname === '/cx'
     || window.location.pathname === '/cx/'
-    || localStorage.getItem('gc_demo_mode') === 'true';
+    || easterEggActive;
+  
+  // Easter Egg: 5 taps on logo within 3 seconds activates demo mode
+  const handleLogoTap = () => {
+    const newCount = logoTapCount + 1;
+    setLogoTapCount(newCount);
+    
+    // Clear previous timer
+    if (logoTapTimerRef.current) {
+      clearTimeout(logoTapTimerRef.current);
+    }
+    
+    // Check if we hit 5 taps
+    if (newCount >= 5) {
+      const newDemoState = !easterEggActive;
+      setEasterEggActive(newDemoState);
+      
+      if (newDemoState) {
+        localStorage.setItem('gc_demo_mode', 'true');
+      } else {
+        localStorage.removeItem('gc_demo_mode');
+      }
+      
+      // Show toast
+      setShowEasterEggToast(true);
+      setTimeout(() => setShowEasterEggToast(false), 2000);
+      
+      // Reset counter
+      setLogoTapCount(0);
+      return;
+    }
+    
+    // Reset counter after 3 seconds of inactivity
+    logoTapTimerRef.current = setTimeout(() => {
+      setLogoTapCount(0);
+    }, 3000);
+  };
 
   // Check for payment return on mount
   useEffect(() => {
@@ -762,12 +805,20 @@ const App: React.FC = () => {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+          {/* Logo with Easter Egg - 5 taps to toggle demo mode */}
+          <button 
+            onClick={handleLogoTap}
+            className={`flex items-center gap-2 transition-all duration-200 ${
+              logoTapCount > 0 ? 'scale-95' : ''
+            } ${logoTapCount >= 3 ? 'opacity-70' : ''}`}
+          >
+            <div className={`w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center transition-all duration-300 ${
+              logoTapCount >= 4 ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-black' : ''
+            }`}>
               <Car size={16} className="text-white" />
             </div>
             <span className="font-semibold text-sm">TheGarageCanvas</span>
-          </div>
+          </button>
           {step !== Step.UPLOAD && (
             <button 
               onClick={startNew}
@@ -779,6 +830,22 @@ const App: React.FC = () => {
           )}
         </div>
       </header>
+      
+      {/* Easter Egg Toast */}
+      {showEasterEggToast && (
+        <div 
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in"
+          style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+        >
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-black px-4 py-2 rounded-full font-semibold text-sm shadow-lg shadow-amber-500/30 flex items-center gap-2">
+            {easterEggActive ? (
+              <>🔓 Studio Mode</>
+            ) : (
+              <>🔒 Normal Mode</>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main 
