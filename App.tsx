@@ -5,7 +5,7 @@ import {
   RefreshCw, Mountain, Building2, Sparkles, Car,
   Smartphone, Monitor, Trees, Sun, Layers, Zap, Check,
   ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive,
-  Scan
+  Scan, ChevronLeft, ChevronRight, Paintbrush, Wand2
 } from 'lucide-react';
 import { 
   ArtStyle, BackgroundTheme, StanceStyle, 
@@ -49,6 +49,14 @@ enum Step {
   GENERATING = 4,
   PREVIEW = 5,
   COMPLETE = 6,
+}
+
+// Sub-steps within CUSTOMIZE for progressive disclosure
+enum CustomizeStep {
+  ANGLE = 1,
+  SCENE = 2,
+  STYLE = 3,
+  EXTRAS = 4,
 }
 
 // ============ BEFORE/AFTER SLIDER COMPONENT ============
@@ -398,6 +406,9 @@ const App: React.FC = () => {
   const [scanStep, setScanStep] = useState(0);
   const [showMods, setShowMods] = useState(false);
   
+  // Customize sub-step for progressive disclosure
+  const [customizeStep, setCustomizeStep] = useState<CustomizeStep>(CustomizeStep.ANGLE);
+  
   // Payment
   const [hasPaid, setHasPaid] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -473,6 +484,8 @@ const App: React.FC = () => {
         setBackground(analysis.suggestedBackground);
       }
       // Stance default is always Stock - don't override
+      // Reset customize step for new session
+      setCustomizeStep(CustomizeStep.ANGLE);
     }
   }, [analysis]);
 
@@ -929,143 +942,217 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* ============ CUSTOMIZE ============ */}
+        {/* ============ CUSTOMIZE WITH STEPPERS ============ */}
         {step === Step.CUSTOMIZE && analysis && (
-          <div className="pt-4 animate-fade-slide-in">
-            {/* Vehicle Preview Card */}
-            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
+          <div className="pt-2 animate-fade-slide-in">
+            
+            {/* ═══════════════ VEHICLE PREVIEW (Always visible at top) ═══════════════ */}
+            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 bg-zinc-900">
               <img 
                 src={`data:image/jpeg;base64,${imageBase64}`}
                 className="w-full h-full object-cover"
                 alt="Your vehicle"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-sm font-medium">{analysis.year} {analysis.make} {analysis.model}</span>
-                {analysis.isOffroad && (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">4×4</span>
-                )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-semibold">{analysis.year} {analysis.make} {analysis.model}</span>
+                  {analysis.isOffroad && (
+                    <span className="text-[10px] bg-amber-500/30 text-amber-400 px-2 py-0.5 rounded-full font-medium">4×4</span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* ─────────────── ANGLE (First and most important choice) ─────────────── */}
+            {/* ═══════════════ STEPPER PROGRESS BAR ═══════════════ */}
             <div className="mb-5">
-              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Choose angle</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
-                  className={`relative p-4 rounded-xl transition-all text-left ${
-                    position === PositionMode.SIDE_PROFILE
-                      ? 'bg-zinc-800 ring-2 ring-amber-500'
-                      : 'bg-zinc-900/50 hover:bg-zinc-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Aperture size={16} className={position === PositionMode.SIDE_PROFILE ? 'text-amber-500' : 'text-zinc-500'} />
-                    <span className="font-medium text-sm">Side Profile</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-500 leading-tight">
-                    Classic automotive art style. Clean, balanced composition.
-                  </p>
-                  {position === PositionMode.SIDE_PROFILE && (
-                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                      <Check size={10} className="text-black" strokeWidth={3} />
-                    </div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
-                  className={`relative p-4 rounded-xl transition-all text-left ${
-                    position === PositionMode.AS_PHOTOGRAPHED
-                      ? 'bg-zinc-800 ring-2 ring-amber-500'
-                      : 'bg-zinc-900/50 hover:bg-zinc-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Camera size={16} className={position === PositionMode.AS_PHOTOGRAPHED ? 'text-amber-500' : 'text-zinc-500'} />
-                    <span className="font-medium text-sm">As Photographed</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-500 leading-tight">
-                    Keep your photo's exact angle. Unique perspective.
-                  </p>
-                  {position === PositionMode.AS_PHOTOGRAPHED && (
-                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                      <Check size={10} className="text-black" strokeWidth={3} />
-                    </div>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* ─────────────── SCENE ─────────────── */}
-            <div className="mb-5">
-              <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Choose a backdrop</label>
-              <div className="grid grid-cols-3 gap-2">
-                {SCENES.map((scene) => {
-                  const isSelected = background === scene.id;
-                  const Icon = scene.icon;
+              {/* Progress dots */}
+              <div className="flex items-center justify-center gap-2 mb-3">
+                {[
+                  { step: CustomizeStep.ANGLE, label: 'Angle', icon: Aperture },
+                  { step: CustomizeStep.SCENE, label: 'Scene', icon: Mountain },
+                  { step: CustomizeStep.STYLE, label: 'Style', icon: Paintbrush },
+                  { step: CustomizeStep.EXTRAS, label: 'Extras', icon: Wand2 },
+                ].map((item, index) => {
+                  const isActive = customizeStep === item.step;
+                  const isCompleted = customizeStep > item.step;
+                  const Icon = item.icon;
                   return (
-                    <button
-                      key={scene.id}
-                      onClick={() => setBackground(scene.id)}
-                      className={`relative aspect-[4/3] rounded-xl overflow-hidden transition-all ${
-                        isSelected 
-                          ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-black scale-[1.02]' 
-                          : 'opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${scene.gradient}`} />
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <Icon size={18} className="text-white/90 mb-0.5" />
-                        <span className="text-[10px] font-medium text-white/90">{scene.name}</span>
-                      </div>
-                      {isSelected && (
-                        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                          <Check size={10} className="text-black" strokeWidth={3} />
+                    <React.Fragment key={item.step}>
+                      <button
+                        onClick={() => setCustomizeStep(item.step)}
+                        className={`flex flex-col items-center transition-all ${
+                          isActive ? 'scale-110' : 'opacity-50 hover:opacity-80'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${
+                          isActive 
+                            ? 'bg-amber-500 text-black' 
+                            : isCompleted 
+                              ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50' 
+                              : 'bg-zinc-800 text-zinc-500'
+                        }`}>
+                          {isCompleted ? <Check size={14} strokeWidth={3} /> : <Icon size={14} />}
                         </div>
+                        <span className={`text-[9px] font-medium ${
+                          isActive ? 'text-amber-500' : isCompleted ? 'text-green-400' : 'text-zinc-600'
+                        }`}>
+                          {item.label}
+                        </span>
+                      </button>
+                      {index < 3 && (
+                        <div className={`w-6 h-0.5 rounded-full mt-[-12px] ${
+                          customizeStep > item.step ? 'bg-green-500/50' : 'bg-zinc-800'
+                        }`} />
                       )}
-                    </button>
+                    </React.Fragment>
                   );
                 })}
               </div>
+              
+              {/* Step indicator text */}
+              <p className="text-center text-[11px] text-zinc-600">
+                Step {customizeStep} of 4
+                {customizeStep === CustomizeStep.EXTRAS && <span className="text-zinc-700"> • optional</span>}
+              </p>
             </div>
 
-            {/* ─────────────── FINE-TUNE (Collapsed - Condition, Stance) ─────────────── */}
-            <div className="mb-5">
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between py-2.5 px-1 text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-wider font-medium">Fine-tune</span>
-                  <span className="text-[10px] text-zinc-700">optional</span>
-                </div>
-                <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-              </button>
+            {/* ═══════════════ STEP CONTENT ═══════════════ */}
+            <div className="min-h-[200px]">
               
-              {showAdvanced && (
-                <div className="pt-3 space-y-5 border-t border-zinc-900">
+              {/* ─────────────── STEP 1: ANGLE ─────────────── */}
+              {customizeStep === CustomizeStep.ANGLE && (
+                <div className="animate-fade-slide-in">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-1">Choose the Angle</h3>
+                    <p className="text-xs text-zinc-500">How should your car be shown?</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <button
+                      onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
+                      className={`relative p-4 rounded-2xl transition-all text-left flex items-center gap-4 ${
+                        position === PositionMode.SIDE_PROFILE
+                          ? 'bg-zinc-800 ring-2 ring-amber-500'
+                          : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        position === PositionMode.SIDE_PROFILE ? 'bg-amber-500/20' : 'bg-zinc-800'
+                      }`}>
+                        <Aperture size={24} className={position === PositionMode.SIDE_PROFILE ? 'text-amber-500' : 'text-zinc-500'} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-semibold text-base block mb-0.5">Side Profile</span>
+                        <p className="text-xs text-zinc-500 leading-tight">
+                          Classic poster look • Clean & balanced
+                        </p>
+                      </div>
+                      {position === PositionMode.SIDE_PROFILE && (
+                        <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                          <Check size={14} className="text-black" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
+                      className={`relative p-4 rounded-2xl transition-all text-left flex items-center gap-4 ${
+                        position === PositionMode.AS_PHOTOGRAPHED
+                          ? 'bg-zinc-800 ring-2 ring-amber-500'
+                          : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        position === PositionMode.AS_PHOTOGRAPHED ? 'bg-amber-500/20' : 'bg-zinc-800'
+                      }`}>
+                        <Camera size={24} className={position === PositionMode.AS_PHOTOGRAPHED ? 'text-amber-500' : 'text-zinc-500'} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-semibold text-base block mb-0.5">As Photographed</span>
+                        <p className="text-xs text-zinc-500 leading-tight">
+                          Keep your exact angle • Unique perspective
+                        </p>
+                      </div>
+                      {position === PositionMode.AS_PHOTOGRAPHED && (
+                        <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                          <Check size={14} className="text-black" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ─────────────── STEP 2: SCENE ─────────────── */}
+              {customizeStep === CustomizeStep.SCENE && (
+                <div className="animate-fade-slide-in">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-1">Pick a Scene</h3>
+                    <p className="text-xs text-zinc-500">Where should your car be?</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    {SCENES.map((scene) => {
+                      const isSelected = background === scene.id;
+                      const Icon = scene.icon;
+                      return (
+                        <button
+                          key={scene.id}
+                          onClick={() => setBackground(scene.id)}
+                          className={`relative aspect-square rounded-xl overflow-hidden transition-all ${
+                            isSelected 
+                              ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-black scale-[1.02]' 
+                              : 'opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <div className={`absolute inset-0 bg-gradient-to-br ${scene.gradient}`} />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <Icon size={22} className="text-white/90 mb-1" />
+                            <span className="text-[10px] font-medium text-white/90 text-center px-1">{scene.name}</span>
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Check size={12} className="text-black" strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ─────────────── STEP 3: STYLE ─────────────── */}
+              {customizeStep === CustomizeStep.STYLE && (
+                <div className="animate-fade-slide-in">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-1">Set the Style</h3>
+                    <p className="text-xs text-zinc-500">How clean or detailed?</p>
+                  </div>
+                  
                   {/* Condition */}
-                  <div>
-                    <label className="text-xs text-zinc-600 mb-2 block">Look</label>
-                    <div className="flex gap-2">
+                  <div className="mb-5">
+                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Condition</label>
+                    <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: FidelityMode.EXACT_MATCH, label: 'As-is', desc: 'dirt & all' },
-                        { id: FidelityMode.CLEAN_BUILD, label: 'Clean', desc: 'washed' },
-                        { id: FidelityMode.FACTORY_FRESH, label: 'Stock', desc: 'no mods' },
+                        { id: FidelityMode.EXACT_MATCH, label: 'As-is', desc: 'Every scratch, every story', emoji: '🛤️' },
+                        { id: FidelityMode.CLEAN_BUILD, label: 'Clean', desc: 'Fresh from the detailer', emoji: '✨' },
+                        { id: FidelityMode.FACTORY_FRESH, label: 'Stock', desc: 'Showroom new', emoji: '🏭' },
                       ].map((opt) => (
                         <button
                           key={opt.id}
                           onClick={() => setFidelity(opt.id)}
-                          className={`flex-1 py-2 px-2 rounded-xl text-center transition-all ${
+                          className={`p-3 rounded-xl text-center transition-all ${
                             fidelity === opt.id
-                              ? 'bg-zinc-800 text-white'
-                              : 'bg-zinc-900/50 text-zinc-600 hover:text-zinc-400'
+                              ? 'bg-zinc-800 ring-2 ring-amber-500'
+                              : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
                           }`}
                         >
-                          <div className="text-sm font-medium">{opt.label}</div>
-                          <div className="text-[10px] opacity-50">{opt.desc}</div>
+                          <span className="text-lg mb-1 block">{opt.emoji}</span>
+                          <div className="text-sm font-semibold">{opt.label}</div>
+                          <div className="text-[9px] text-zinc-500 mt-0.5 leading-tight">{opt.desc}</div>
                         </button>
                       ))}
                     </div>
@@ -1073,84 +1160,143 @@ const App: React.FC = () => {
 
                   {/* Stance */}
                   <div>
-                    <label className="text-xs text-zinc-600 mb-2 block">Stance</label>
-                    <div className="flex gap-2">
-                      {getStanceOptions().map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => setStance(opt.id)}
-                          className={`flex-1 py-2.5 px-3 rounded-xl text-sm transition-all ${
-                            stance === opt.id
-                              ? 'bg-zinc-800 text-white font-medium'
-                              : 'bg-zinc-900/50 text-zinc-600 hover:text-zinc-400'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ─────────────── DREAM MODS (Last, optional) ─────────────── */}
-            {analysis.popularMods && analysis.popularMods.length > 0 && (
-              <div className="mb-6">
-                <button
-                  onClick={() => setShowMods(!showMods)}
-                  className="w-full flex items-center justify-between py-2.5 px-1 text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wider font-medium">Dream mods</span>
-                    <span className="text-[10px] text-zinc-700">optional</span>
-                  </div>
-                  <ChevronDown size={14} className={`transition-transform ${showMods ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showMods && (
-                  <div className="pt-3 border-t border-zinc-900">
-                    <div className="flex flex-wrap gap-1.5">
-                      {analysis.popularMods.slice(0, 6).map((mod) => {
-                        const isSelected = selectedMods.includes(mod.name);
+                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Stance</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {getStanceOptions().map((opt) => {
+                        const stanceEmojis: Record<string, string> = {
+                          'Stock': '📍',
+                          'Lifted + AT': '⬆️',
+                          'Steelies + Mud': '🔩',
+                          'Lowered + Wheels': '⬇️',
+                        };
+                        const stanceDescs: Record<string, string> = {
+                          'Stock': 'As it sits now',
+                          'Lifted + AT': 'Ready for trails',
+                          'Steelies + Mud': 'Built for mud',
+                          'Lowered + Wheels': 'Street stance',
+                        };
                         return (
                           <button
-                            key={mod.id || mod.name}
-                            onClick={() => toggleMod(mod.name)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                              isSelected
-                                ? 'bg-amber-500 text-black'
-                                : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                            key={opt.id}
+                            onClick={() => setStance(opt.id)}
+                            className={`p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
+                              stance === opt.id
+                                ? 'bg-zinc-800 ring-2 ring-amber-500'
+                                : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
                             }`}
                           >
-                            {isSelected && <span className="mr-1">✓</span>}
-                            {mod.name}
+                            <span className="text-lg">{stanceEmojis[opt.label] || '📍'}</span>
+                            <div>
+                              <div className="text-sm font-semibold">{opt.label}</div>
+                              <div className="text-[9px] text-zinc-500">{stanceDescs[opt.label] || ''}</div>
+                            </div>
                           </button>
                         );
                       })}
                     </div>
-                    {selectedMods.length > 0 && (
-                      <p className="text-[10px] text-amber-500/80 mt-2">
-                        +{selectedMods.length} mod{selectedMods.length > 1 ? 's' : ''} will be added
-                      </p>
-                    )}
                   </div>
+                </div>
+              )}
+
+              {/* ─────────────── STEP 4: EXTRAS (Optional) ─────────────── */}
+              {customizeStep === CustomizeStep.EXTRAS && (
+                <div className="animate-fade-slide-in">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-1">Dream Upgrades</h3>
+                    <p className="text-xs text-zinc-500">Add mods you've been dreaming about</p>
+                    <span className="inline-block mt-1 text-[10px] text-zinc-700 bg-zinc-900 px-2 py-0.5 rounded-full">Optional</span>
+                  </div>
+                  
+                  {analysis.popularMods && analysis.popularMods.length > 0 ? (
+                    <>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {analysis.popularMods.slice(0, 6).map((mod) => {
+                          const isSelected = selectedMods.includes(mod.name);
+                          return (
+                            <button
+                              key={mod.id || mod.name}
+                              onClick={() => toggleMod(mod.name)}
+                              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                isSelected
+                                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30'
+                                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                              }`}
+                            >
+                              {isSelected && <span className="mr-1.5">✓</span>}
+                              {mod.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedMods.length > 0 && (
+                        <p className="text-center text-xs text-amber-500 mt-4">
+                          +{selectedMods.length} upgrade{selectedMods.length > 1 ? 's' : ''} will be added to your art
+                        </p>
+                      )}
+                      {selectedMods.length === 0 && (
+                        <p className="text-center text-xs text-zinc-600 mt-4">
+                          Tap any mod to add it, or skip to create art
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6">
+                      <Wand2 size={32} className="mx-auto text-zinc-700 mb-2" />
+                      <p className="text-sm text-zinc-500">No popular mods found for this vehicle</p>
+                      <p className="text-xs text-zinc-600 mt-1">You can still create amazing art!</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ═══════════════ NAVIGATION BUTTONS ═══════════════ */}
+            <div className="mt-6 space-y-3">
+              {customizeStep < CustomizeStep.EXTRAS ? (
+                <button 
+                  onClick={() => setCustomizeStep(customizeStep + 1)}
+                  className="w-full py-4 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                >
+                  Next
+                  <ChevronRight size={18} />
+                </button>
+              ) : (
+                <button 
+                  onClick={handleGenerate}
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
+                >
+                  <Sparkles size={20} />
+                  Create Art
+                </button>
+              )}
+              
+              {/* Back button or Skip */}
+              <div className="flex gap-3">
+                {customizeStep > CustomizeStep.ANGLE && (
+                  <button 
+                    onClick={() => setCustomizeStep(customizeStep - 1)}
+                    className="flex-1 py-3 text-zinc-500 hover:text-white font-medium rounded-xl flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <ChevronLeft size={16} />
+                    Back
+                  </button>
+                )}
+                {customizeStep < CustomizeStep.EXTRAS && (
+                  <button 
+                    onClick={handleGenerate}
+                    className="flex-1 py-3 text-zinc-600 hover:text-zinc-400 text-sm font-medium rounded-xl flex items-center justify-center gap-1 transition-colors"
+                  >
+                    Skip to Create
+                    <Sparkles size={14} />
+                  </button>
                 )}
               </div>
-            )}
-
-            {/* Generate Button */}
-            <button 
-              onClick={handleGenerate}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
-            >
-              <Sparkles size={20} />
-              Create Art
-            </button>
-            {/* Hide price in demo mode */}
-            {!isDemoMode && (
-              <p className="text-center text-[11px] text-zinc-600 mt-3">Free preview. $3.99 for 4K pack.</p>
-            )}
+              
+              {/* Price hint - hide in demo mode */}
+              {!isDemoMode && customizeStep === CustomizeStep.EXTRAS && (
+                <p className="text-center text-[11px] text-zinc-600">Free preview. $3.99 for 4K pack.</p>
+              )}
+            </div>
           </div>
         )}
 
