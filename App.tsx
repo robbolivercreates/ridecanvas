@@ -7,7 +7,7 @@ import {
   ChevronDown, Package, Printer, Camera, Aperture, Plus, FolderArchive,
   Scan, ChevronLeft, ChevronRight, Paintbrush, Wand2,
   Image, Palette, Settings2, CircleDot, Compass, Sunset, Building, 
-  TreePine, Warehouse
+  TreePine, Warehouse, Menu, X, Info, ShieldCheck, Mail
 } from 'lucide-react';
 import { 
   ArtStyle, BackgroundTheme, StanceStyle, 
@@ -155,25 +155,28 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
     >
       {/* After Image (full) - the generated art */}
       <img 
-        src={`data:image/png;base64,${afterImage}`}
-        className="absolute inset-0 w-full h-full object-contain"
+        src={afterImage.startsWith('data:') || afterImage.startsWith('/') || afterImage.startsWith('http') 
+          ? afterImage 
+          : `data:image/png;base64,${afterImage}`}
+        className="absolute inset-0 w-full h-full object-contain bg-black"
         alt="After"
         draggable={false}
       />
       
-      {/* Before Image (clipped) - centered with dark background */}
+      {/* Before Image (clipped) */}
       <div 
-        className="absolute inset-0 overflow-hidden transition-none bg-zinc-900"
+        className="absolute inset-0 overflow-hidden transition-none"
         style={{ width: `${sliderPosition}%` }}
       >
-        {/* Dark background container with centered image */}
         <div 
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0 bg-zinc-900"
           style={{ width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%' }}
         >
           <img 
-            src={`data:image/jpeg;base64,${beforeImage}`}
-            className="max-w-[85%] max-h-[70%] object-contain rounded-lg shadow-2xl"
+            src={beforeImage.startsWith('data:') || beforeImage.startsWith('/') || beforeImage.startsWith('http') 
+              ? beforeImage 
+              : `data:image/jpeg;base64,${beforeImage}`}
+            className="w-full h-full object-contain"
             alt="Before"
             draggable={false}
           />
@@ -199,17 +202,17 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
       >
         {/* Slider Handle */}
         <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-2xl flex items-center justify-center cursor-grab active:cursor-grabbing border-4 border-white/20"
-          style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.3)' }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing border-2 border-white/20"
+          style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
           onMouseDown={handleMouseDown}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
         >
-          <div className="flex items-center gap-0.5 text-black">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-0.5 text-black/70">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
               <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
             </svg>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
           </div>
@@ -384,6 +387,32 @@ const SCENES = [
   { id: BackgroundTheme.GARAGE, name: 'Garage', icon: Warehouse, gradient: 'from-zinc-700 via-zinc-600 to-zinc-500' },
 ];
 
+// ============ SHOWCASE DATA ============
+// Images are in /public/showcase/ folder
+const SHOWCASE_DATA = [
+  {
+    id: 1,
+    name: "VW California Beach",
+    scene: "Mountain Peaks",
+    before: "/showcase/before1.png",
+    after: "/showcase/after1.png"
+  },
+  {
+    id: 2,
+    name: "Adventure Ready",
+    scene: "Scenic Drive",
+    before: "/showcase/before2.png",
+    after: "/showcase/after2.png"
+  },
+  {
+    id: 3,
+    name: "Trail Blazer",
+    scene: "Wilderness",
+    before: "/showcase/before3.png",
+    after: "/showcase/after3.png"
+  }
+];
+
 const App: React.FC = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(Step.UPLOAD);
@@ -410,6 +439,9 @@ const App: React.FC = () => {
   
   // Customize sub-step for progressive disclosure
   const [customizeStep, setCustomizeStep] = useState<CustomizeStep>(CustomizeStep.ANGLE);
+  
+  // Menu state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // Payment
   const [hasPaid, setHasPaid] = useState(false);
@@ -834,17 +866,95 @@ const App: React.FC = () => {
             </div>
             <span className="font-semibold text-sm">TheGarageCanvas</span>
           </button>
-          {step !== Step.UPLOAD && (
+          
+          <div className="flex items-center gap-3">
+            {step !== Step.UPLOAD && (
+              <button 
+                onClick={startNew}
+                className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <Plus size={14} />
+                New
+              </button>
+            )}
             <button 
-              onClick={startNew}
-              className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1"
+              onClick={() => setIsMenuOpen(true)}
+              className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
             >
-              <Plus size={14} />
-              New
+              <Menu size={24} />
             </button>
-          )}
+          </div>
         </div>
       </header>
+
+      {/* Menu Drawer */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* Drawer Content */}
+          <div className="relative w-full max-w-xs h-full bg-zinc-950 border-l border-white/10 shadow-2xl animate-slide-in-right flex flex-col">
+            <div className="p-6 flex items-center justify-between border-b border-white/5">
+              <span className="font-semibold text-lg">Menu</span>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {/* FAQ Section */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">FAQ</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-1">What do I get for $3.99?</h4>
+                    <p className="text-xs text-zinc-500 leading-relaxed">3 high-resolution 4K images: Phone wallpaper, Desktop wallpaper, and Print-ready (4:3).</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-1">How long does it take?</h4>
+                    <p className="text-xs text-zinc-500 leading-relaxed">About 60 seconds to analyze and generate all 3 formats.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-1">Refund policy?</h4>
+                    <p className="text-xs text-zinc-500 leading-relaxed">All sales are final once images are generated. Preview your art for free before purchasing.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legal/Links */}
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <button className="flex items-center gap-3 text-sm text-zinc-400 hover:text-white transition-colors w-full text-left">
+                  <ShieldCheck size={18} />
+                  Privacy Policy
+                </button>
+                <button className="flex items-center gap-3 text-sm text-zinc-400 hover:text-white transition-colors w-full text-left">
+                  <Info size={18} />
+                  Terms of Service
+                </button>
+                <a 
+                  href="mailto:hello@thegaragecanvas.art"
+                  className="flex items-center gap-3 text-sm text-zinc-400 hover:text-white transition-colors w-full text-left"
+                >
+                  <Mail size={18} />
+                  Contact Support
+                </a>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/5 text-center">
+              <p className="text-[10px] text-zinc-700">© 2024 TheGarageCanvas.Art</p>
+              <p className="text-[10px] text-zinc-800 mt-1">Made with 🧡 for car enthusiasts</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Easter Egg Toast */}
       {showEasterEggToast && (
@@ -870,20 +980,126 @@ const App: React.FC = () => {
         
         {/* ============ UPLOAD ============ */}
         {step === Step.UPLOAD && (
-          <div className="pt-16 animate-fade-slide-in">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Upload Your Ride</h1>
-              <p className="text-zinc-500 text-sm">Side views look best. Any angle works.</p>
-            </div>
-            
-            <label className="block aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 transition-all cursor-pointer bg-zinc-900/30 hover:bg-zinc-900/50 flex flex-col items-center justify-center group btn-press active:scale-[0.98] active:bg-zinc-900/70">
-              <input type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleFile} />
-              <div className="w-16 h-16 rounded-2xl bg-zinc-800 group-hover:bg-amber-500/20 group-active:bg-amber-500/30 flex items-center justify-center mb-4 transition-colors">
-                <Upload size={28} className="text-zinc-500 group-hover:text-amber-500 group-active:text-amber-400 transition-colors" />
+          <div className="animate-fade-slide-in">
+            {/* Hero Section */}
+            <div className="text-center pt-12 pb-10">
+              <div className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
+                Automotive AI Art Studio
               </div>
-              <span className="text-zinc-300 font-medium">Tap to upload</span>
-              <span className="text-zinc-600 text-sm mt-1">JPG, PNG, HEIC</span>
+              <h1 className="text-4xl font-bold tracking-tight mb-4">
+                Turn Your Ride <br />
+                <span className="bg-gradient-to-r from-amber-200 via-amber-500 to-orange-600 bg-clip-text text-transparent">
+                  Into A Masterpiece
+                </span>
+              </h1>
+              <p className="text-zinc-400 text-sm max-w-[280px] mx-auto leading-relaxed">
+                Trained on thousands of iconic builds to create premium 4K art of your vehicle.
+              </p>
+            </div>
+
+            {/* Premium Upload Zone */}
+            <label className="relative aspect-square max-w-[320px] mx-auto mb-12 rounded-[2.5rem] liquid-glass flex flex-col items-center justify-center p-8 transition-all duration-500 animate-breathing-glow cursor-pointer btn-press active:scale-[0.98]">
+              <input type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleFile} />
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6 animate-float">
+                <Upload size={32} className="text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold mb-2">Drop Your Ride</h2>
+              <p className="text-zinc-500 text-xs mb-8">or tap to browse your gallery</p>
+              
+              <div className="flex items-center gap-4 text-zinc-400">
+                <div className="flex flex-col items-center gap-1">
+                  <Smartphone size={16} />
+                  <span className="text-[9px] font-medium">Phone</span>
+                </div>
+                <div className="w-px h-6 bg-white/10" />
+                <div className="flex flex-col items-center gap-1">
+                  <Monitor size={16} />
+                  <span className="text-[9px] font-medium">Desktop</span>
+                </div>
+                <div className="w-px h-6 bg-white/10" />
+                <div className="flex flex-col items-center gap-1">
+                  <Printer size={16} />
+                  <span className="text-[9px] font-medium">Print</span>
+                </div>
+              </div>
             </label>
+
+            {/* Showcase Section */}
+            <div className="space-y-6 mb-12">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Recent Masterpieces</h3>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-[10px] text-amber-500 font-medium">Swipe to Reveal</span>
+                </div>
+              </div>
+              
+              {/* Horizontal Scroll Carousel */}
+              <div className="flex gap-4 overflow-x-auto pb-4 px-2 snap-x snap-mandatory no-scrollbar">
+                {SHOWCASE_DATA.map((example) => (
+                  <div key={example.id} className="min-w-[280px] snap-center">
+                    <div className="relative aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl shadow-black/50">
+                      <BeforeAfterSlider 
+                        beforeImage={example.before} 
+                        afterImage={example.after}
+                        beforeLabel="Photo"
+                        afterLabel="AI Art"
+                        autoAnimate={true}
+                      />
+                      
+                      {/* Info Overlay (Bottom) */}
+                      <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
+                        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-3 border border-white/5 shadow-xl">
+                          <div className="text-xs font-bold text-white mb-0.5">{example.name}</div>
+                          <div className="text-[9px] text-zinc-400 uppercase tracking-[0.1em] flex items-center gap-1">
+                            <Sparkles size={10} className="text-amber-500" />
+                            {example.scene}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Pagination Dots (Visual Only) */}
+              <div className="flex justify-center gap-1.5">
+                {SHOWCASE_DATA.map((_, idx) => (
+                  <div key={idx} className="w-1 h-1 rounded-full bg-zinc-800" />
+                ))}
+              </div>
+              
+              {/* Scroll Hint */}
+              <p className="text-center text-[10px] text-zinc-600 italic">
+                Slide the center line to compare • Swipe for more
+              </p>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="grid grid-cols-3 gap-4 py-8 border-t border-white/5">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center mb-2">
+                  <Zap size={18} className="text-amber-500" />
+                </div>
+                <span className="text-[10px] font-bold text-white mb-1 uppercase tracking-wider">Instant</span>
+                <p className="text-[8px] text-zinc-600">60s turnaround</p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center mb-2">
+                  <Sparkles size={18} className="text-amber-500" />
+                </div>
+                <span className="text-[10px] font-bold text-white mb-1 uppercase tracking-wider">Premium AI</span>
+                <p className="text-[8px] text-zinc-600">Automotive logic</p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center mb-2">
+                  <ShieldCheck size={18} className="text-amber-500" />
+                </div>
+                <span className="text-[10px] font-bold text-white mb-1 uppercase tracking-wider">One-Time</span>
+                <p className="text-[8px] text-zinc-600">No subscriptions</p>
+              </div>
+            </div>
           </div>
         )}
 
