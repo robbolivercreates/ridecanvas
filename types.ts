@@ -42,14 +42,11 @@ export enum PositionMode {
   SIDE_PROFILE = 'Side Profile',         // Convert to clean side profile
 }
 
-// Simplified stance options
+// Stance options - ONLY controls suspension height, NOT wheels
 export enum StanceStyle {
-  STOCK = 'Stock',                    // Keep as-is
-  // Off-road only
-  LIFTED = 'Lifted + AT',             // Lifted with all-terrain tires
-  STEELIES = 'Steelies + Mud',        // Steel wheels with mud tires
-  // Non-off-road only  
-  LOWERED = 'Lowered + Wheels',       // Lowered with popular aftermarket wheels
+  STOCK = 'Stock',      // Keep original suspension height
+  LIFTED = 'Lifted',    // Raise suspension 2-3 inches (keeps original wheels)
+  LOWERED = 'Lowered',  // Lower suspension 1-2 inches (keeps original wheels)
 }
 
 export enum CompositionStyle {

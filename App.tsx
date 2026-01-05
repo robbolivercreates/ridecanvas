@@ -18,29 +18,15 @@ import { redirectToCheckout, verifyPayment, checkPaymentStatus, clearPaymentPara
 
 // ============ HAPTIC FEEDBACK UTILITY ============
 const haptic = {
-  // Light tap - for button presses
+  // Visual feedback for buttons (since vibration isn't great on iOS)
   light: () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(10);
-    }
+    // We use CSS active:scale transitions for this
   },
-  // Medium - for selections
-  medium: () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(25);
-    }
-  },
-  // Success - for completed actions
   success: () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate([20, 50, 40]);
-    }
+    // Triggered on success actions
   },
-  // Error - for failed actions
   error: () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate([50, 30, 50, 30, 50]);
-    }
+    // Triggered on error actions
   }
 };
 
@@ -70,6 +56,30 @@ interface BeforeAfterSliderProps {
   autoAnimate?: boolean;
 }
 
+// Helper to create proper image src from base64 or URL
+const getImageSrc = (image: string, defaultMime: string = 'image/png'): string => {
+  if (!image) return '';
+  
+  // Already a complete data URL or regular URL
+  if (image.startsWith('data:') || image.startsWith('/') || image.startsWith('http')) {
+    return image;
+  }
+  
+  // Clean the base64 string - remove any whitespace or newlines
+  const cleanBase64 = image.replace(/[\s\n\r]/g, '');
+  
+  // Detect image type from base64 header
+  // PNG starts with iVBOR, JPEG starts with /9j/
+  let mimeType = defaultMime;
+  if (cleanBase64.startsWith('/9j/') || cleanBase64.startsWith('/9J/')) {
+    mimeType = 'image/jpeg';
+  } else if (cleanBase64.startsWith('iVBOR')) {
+    mimeType = 'image/png';
+  }
+  
+  return `data:${mimeType};base64,${cleanBase64}`;
+};
+
 const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ 
   beforeImage, 
   afterImage, 
@@ -77,23 +87,23 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   afterLabel = 'After',
   autoAnimate = false
 }) => {
-  const [sliderPosition, setSliderPosition] = useState(autoAnimate ? 100 : 50);
+  const [sliderPosition, setSliderPosition] = useState(autoAnimate ? 15 : 50);
   const [isDragging, setIsDragging] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-animate on mount: 100% → 50% (reveal the "After" image)
+  // Auto-animate on mount: 100% → 15% (reveal 85% of the "After" image)
   useEffect(() => {
     if (autoAnimate && !hasAnimated) {
       // Start from 100% (showing full "Before")
       setSliderPosition(100);
       
-      // After a brief pause, animate to 50%
+      // After a brief pause, animate to 15%
       const timer = setTimeout(() => {
         const duration = 1500; // 1.5 seconds
         const startPosition = 100;
-        const endPosition = 50;
+        const endPosition = 15;
         const startTime = performance.now();
         
         const animate = (currentTime: number) => {
@@ -149,16 +159,14 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative aspect-[9/16] rounded-2xl overflow-hidden cursor-ew-resize select-none touch-pan-y bg-black"
+      className="relative w-full h-full rounded-2xl overflow-hidden cursor-ew-resize select-none touch-pan-y bg-black"
       onMouseMove={handleMouseMove}
       onTouchMove={handleTouchMove}
     >
       {/* After Image (full) - the generated art */}
       <img 
-        src={afterImage.startsWith('data:') || afterImage.startsWith('/') || afterImage.startsWith('http') 
-          ? afterImage 
-          : `data:image/png;base64,${afterImage}`}
-        className="absolute inset-0 w-full h-full object-contain bg-black"
+        src={afterImage}
+        className="absolute inset-0 w-full h-full object-cover"
         alt="After"
         draggable={false}
       />
@@ -169,14 +177,12 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
         style={{ width: `${sliderPosition}%` }}
       >
         <div 
-          className="absolute inset-0 bg-zinc-900"
+          className="absolute inset-0"
           style={{ width: sliderPosition > 0 ? `${100 / (sliderPosition / 100)}%` : '100%' }}
         >
           <img 
-            src={beforeImage.startsWith('data:') || beforeImage.startsWith('/') || beforeImage.startsWith('http') 
-              ? beforeImage 
-              : `data:image/jpeg;base64,${beforeImage}`}
-            className="w-full h-full object-contain"
+            src={beforeImage}
+            className="w-full h-full object-cover"
             alt="Before"
             draggable={false}
           />
@@ -220,25 +226,12 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
       </div>
       
       {/* Labels with fade-in animation */}
-      <div className={`absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md rounded-full text-xs font-semibold text-white transition-opacity duration-500 ${sliderPosition > 10 ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md rounded-full text-[10px] font-bold text-white transition-opacity duration-500 ${sliderPosition > 10 ? 'opacity-100' : 'opacity-0'}`}>
         {beforeLabel}
       </div>
-      <div className={`absolute top-4 right-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 backdrop-blur-md rounded-full text-xs font-bold text-black shadow-lg transition-opacity duration-500 ${sliderPosition < 90 ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute top-4 right-4 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 backdrop-blur-md rounded-full text-[10px] font-black text-black shadow-lg transition-opacity duration-500 ${sliderPosition < 90 ? 'opacity-100' : 'opacity-0'}`}>
         ✨ {afterLabel}
       </div>
-      
-      {/* Drag hint - only shows after animation */}
-      {showHint && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 backdrop-blur-md rounded-full text-xs text-white/80 flex items-center gap-2 animate-pulse">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-          </svg>
-          Drag to compare
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </div>
-      )}
     </div>
   );
 };
@@ -303,10 +296,10 @@ const GeneratingScreen: React.FC<GeneratingScreenProps> = ({
   );
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 animate-fade-slide-in">
       {/* Preview of original image with overlay */}
       {imageBase64 && (
-        <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-6 bg-zinc-900">
+        <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden mb-8 bg-zinc-900 border border-white/5 shadow-2xl">
           <img 
             src={`data:image/jpeg;base64,${imageBase64}`}
             className="w-full h-full object-cover opacity-50"
@@ -320,58 +313,45 @@ const GeneratingScreen: React.FC<GeneratingScreenProps> = ({
           {/* Center spinner */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full border-4 border-zinc-800/50 border-t-amber-500 animate-spin" />
+              <div className="w-24 h-24 rounded-full border-4 border-white/5 border-t-amber-500 animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles size={24} className="text-amber-500 animate-pulse" />
+                <Sparkles size={32} className="text-amber-500 animate-pulse" />
               </div>
             </div>
           </div>
           
           {/* Corner brackets */}
-          <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-amber-500/50" />
-          <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-amber-500/50" />
-          <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-amber-500/50" />
-          <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-amber-500/50" />
+          <div className="absolute top-6 left-6 w-8 h-8 border-l-2 border-t-2 border-amber-500/30" />
+          <div className="absolute top-6 right-6 w-8 h-8 border-r-2 border-t-2 border-amber-500/30" />
+          <div className="absolute bottom-6 left-6 w-8 h-8 border-l-2 border-b-2 border-amber-500/30" />
+          <div className="absolute bottom-6 right-6 w-8 h-8 border-r-2 border-b-2 border-amber-500/30" />
         </div>
       )}
       
       {/* Title */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-white mb-1">Creating your masterpiece</h2>
-        <p className="text-sm text-zinc-500">{statusMessage || 'This usually takes 10-15 seconds'}</p>
+      <div className="text-center mb-10 px-4">
+        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Creating your masterpiece</h2>
+        <p className="text-sm text-zinc-500 leading-relaxed">{statusMessage || 'This usually takes 10-15 seconds'}</p>
       </div>
       
-      {/* Progressive info reveal */}
-      <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+      {/* Progressive info reveal in Liquid Glass Container */}
+      <div className="liquid-glass rounded-[2.5rem] p-8 space-y-2 border border-white/10">
+        <h3 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.2em] mb-4">Art Generation Log</h3>
         <InfoLine visible={revealStep >= 1}>
-          {analysis?.year} {analysis?.make} {analysis?.model}
+          {analysis?.year} {analysis?.make} {analysis?.model} identified
         </InfoLine>
         
         <InfoLine visible={revealStep >= 2}>
-          {analysis?.color} • {analysis?.isOffroad ? '4×4 Off-Road' : analysis?.category}
+          {analysis?.color} finish • {analysis?.isOffroad ? '4×4 logic active' : 'Street build logic'}
         </InfoLine>
         
         <InfoLine visible={revealStep >= 3}>
-          {getBackgroundName(background)} backdrop • {position === PositionMode.SIDE_PROFILE ? 'Side profile' : 'Original angle'}
+          {getBackgroundName(background)} environment • {position === PositionMode.SIDE_PROFILE ? 'Side profile' : 'Original perspective'}
         </InfoLine>
-
-        {selectedMods.length > 0 && (
-          <InfoLine visible={revealStep >= 3}>
-            +{selectedMods.length} virtual mod{selectedMods.length > 1 ? 's' : ''}
-          </InfoLine>
-        )}
-
-        {analysis?.installedAccessories && analysis.installedAccessories.length > 0 && (
-          <InfoLine visible={revealStep >= 2}>
-            {analysis.installedAccessories.slice(0, 2).join(' • ')}
-          </InfoLine>
-        )}
         
-        <div className="mt-3 pt-3 border-t border-zinc-800/50">
-          <InfoLine visible={revealStep >= 4} isLoading={true}>
-            Rendering in 4K resolution...
-          </InfoLine>
-        </div>
+        <InfoLine visible={revealStep >= 4} isLoading={true}>
+          {revealStep >= 4 ? 'Rendering 4K textures...' : 'Preparing scene...'}
+        </InfoLine>
       </div>
     </div>
   );
@@ -399,27 +379,41 @@ const SHOWCASE_DATA = [
   },
   {
     id: 2,
-    name: "Adventure Ready",
-    scene: "Scenic Drive",
+    name: "Land Rover LR4",
+    scene: "Desert Dunes",
     before: "/showcase/before2.png",
     after: "/showcase/after2.png"
   },
   {
     id: 3,
-    name: "Trail Blazer",
-    scene: "Wilderness",
+    name: "Jeep Wrangler",
+    scene: "Forest Trail",
     before: "/showcase/before3.png",
     after: "/showcase/after3.png"
   }
 ];
 
 const App: React.FC = () => {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const mobileCarouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    const scrollAmount = 300; // Adjusted for slide width
+    const targetRef = carouselRef.current || mobileCarouselRef.current;
+    if (!targetRef) return;
+    targetRef.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(Step.UPLOAD);
   
   // Main visible options
   const [background, setBackground] = useState<BackgroundTheme>(BackgroundTheme.MOUNTAINS);
   const [position, setPosition] = useState<PositionMode>(PositionMode.SIDE_PROFILE); // Default: Side Profile
+  const [customCity, setCustomCity] = useState<string>(''); // Custom city for City Skyline background
   
   // Advanced options (collapsed)
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -577,7 +571,8 @@ const App: React.FC = () => {
               state.position || PositionMode.AS_PHOTOGRAPHED,
               state.stance || StanceStyle.STOCK, 
               state.selectedMods || [],
-              (progress) => setStatusMessage(progress)
+              (progress) => setStatusMessage(progress),
+              state.customCity || undefined
             );
             setArtSet(set);
           } else {
@@ -591,7 +586,8 @@ const App: React.FC = () => {
               state.position || PositionMode.AS_PHOTOGRAPHED,
               state.stance || StanceStyle.STOCK, 
               state.selectedMods || [],
-              (progress) => setStatusMessage(progress)
+              (progress) => setStatusMessage(progress),
+              state.customCity || undefined
             );
             setArtSet(set);
           }
@@ -614,16 +610,26 @@ const App: React.FC = () => {
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      haptic.medium(); // Haptic on file select
-      const base64 = await fileToGenerativePart(e.target.files[0]);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    haptic.light(); // Haptic on file select
+    
+    // Show loading state immediately
+    setStep(Step.ANALYZING);
+    setStatusMessage("Processing your photo...");
+    
+    try {
+      console.log('Processing file:', file.name, file.type, file.size);
+      const base64 = await fileToGenerativePart(file);
+      console.log('File processed, base64 length:', base64.length);
+      
       setImageBase64(base64);
       setPreviewArt(null);
       setArtSet(null);
       setHasPaid(false);
       setSelectedMods([]);
       setScanStep(0);
-      setStep(Step.ANALYZING);
       
       try {
         const res = await analyzeVehicle(base64);
@@ -636,19 +642,28 @@ const App: React.FC = () => {
         setStep(Step.UPLOAD);
         alert("Couldn't analyze that image. Try a clearer photo.");
       }
+    } catch (err) {
+      console.error('File processing error:', err);
+      haptic.error();
+      setStep(Step.UPLOAD);
+      alert("Couldn't process that image. Please try a different photo.");
     }
+    
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
   const handleGenerate = async () => {
     if (!imageBase64 || !analysis) return;
-    haptic.medium(); // Haptic on button press
+    haptic.light(); // Haptic on button press
     setStep(Step.GENERATING);
     setStatusMessage("Creating your artwork...");
     
     try {
       const art = await generateArt(
         imageBase64, analysis, ArtStyle.POSTER, background, 
-        fidelity, position, stance, selectedMods
+        fidelity, position, stance, selectedMods,
+        background === BackgroundTheme.CITY ? customCity : undefined
       );
       setPreviewArt(art);
       haptic.success(); // Haptic on art complete!
@@ -668,7 +683,7 @@ const App: React.FC = () => {
     try {
       localStorage.setItem('garagecanvas_pending_art', JSON.stringify({
         imageBase64, analysis, background, fidelity, position, stance, selectedMods,
-        previewArt
+        previewArt, customCity
       }));
       
       await redirectToCheckout(
@@ -700,7 +715,8 @@ const App: React.FC = () => {
         position,
         stance, 
         selectedMods,
-        (progress) => setStatusMessage(`DEV: ${progress}`)
+        (progress) => setStatusMessage(`DEV: ${progress}`),
+        background === BackgroundTheme.CITY ? customCity : undefined
       );
       setArtSet(set);
       setHasPaid(true);
@@ -851,37 +867,42 @@ const App: React.FC = () => {
         className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg md:max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo with Easter Egg - 5 taps to toggle demo mode */}
           <button 
             onClick={handleLogoTap}
-            className={`flex items-center gap-2 transition-all duration-200 ${
+            className={`flex items-center gap-3 transition-all duration-200 ${
               logoTapCount > 0 ? 'scale-95' : ''
             } ${logoTapCount >= 3 ? 'opacity-70' : ''}`}
           >
-            <div className={`w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center transition-all duration-300 ${
-              logoTapCount >= 4 ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-black' : ''
+            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center transition-all duration-300 shadow-lg shadow-orange-500/20 ${
+              logoTapCount >= 4 || isDemoMode ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-black' : ''
             }`}>
-              <Car size={16} className="text-white" />
+              <Car size={20} className="text-white" />
             </div>
-            <span className="font-semibold text-sm">TheGarageCanvas</span>
+            <div className="flex flex-col items-start">
+              <span className="font-bold text-base leading-tight tracking-tight">TheGarageCanvas</span>
+              {isDemoMode && (
+                <span className="text-[10px] font-extrabold text-amber-500 uppercase tracking-tighter leading-none mt-0.5">Creator Mode 🔓</span>
+              )}
+            </div>
           </button>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {step !== Step.UPLOAD && (
               <button 
                 onClick={startNew}
-                className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1"
+                className="h-10 px-4 rounded-full bg-zinc-900/50 border border-white/10 text-xs font-bold text-white hover:bg-zinc-800 transition-all flex items-center gap-2 btn-press active:scale-95"
               >
-                <Plus size={14} />
-                New
+                <Plus size={16} className="text-amber-500" />
+                NEW
               </button>
             )}
             <button 
               onClick={() => setIsMenuOpen(true)}
-              className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              className="w-12 h-12 flex items-center justify-center text-zinc-400 hover:text-white transition-colors active:scale-90"
             >
-              <Menu size={24} />
+              <Menu size={28} />
             </button>
           </div>
         </div>
@@ -946,6 +967,25 @@ const App: React.FC = () => {
                   Contact Support
                 </a>
               </div>
+
+              {/* Developer Mode Toggle in Menu */}
+              {isDemoMode && (
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest">Creator Mode</h3>
+                  <button 
+                    onClick={() => {
+                      setEasterEggActive(false);
+                      localStorage.removeItem('gc_demo_mode');
+                      setIsMenuOpen(false);
+                      window.location.href = window.location.pathname; // Clear query params
+                    }}
+                    className="flex items-center gap-3 text-sm text-zinc-400 hover:text-white transition-colors w-full text-left"
+                  >
+                    <RefreshCw size={18} className="text-amber-500" />
+                    Reset to Normal Mode
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-white/5 text-center">
@@ -974,40 +1014,50 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main 
-        className="pb-8 px-4 max-w-lg mx-auto"
-        style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' }}
+        className="pb-8 px-4 max-w-lg md:max-w-5xl mx-auto"
+        style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' }}
       >
         
         {/* ============ UPLOAD ============ */}
         {step === Step.UPLOAD && (
           <div className="animate-fade-slide-in">
             {/* Hero Section */}
-            <div className="text-center pt-12 pb-10">
-              <div className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
+            <div className="text-center pt-6 md:pt-12 pb-6 md:pb-10">
+              <div className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] mb-3 md:mb-4">
                 Automotive AI Art Studio
               </div>
-              <h1 className="text-4xl font-bold tracking-tight mb-4">
+              <h1 className="text-3xl md:text-6xl font-black tracking-tight mb-4 md:mb-6 px-4">
                 Turn Your Ride <br />
                 <span className="bg-gradient-to-r from-amber-200 via-amber-500 to-orange-600 bg-clip-text text-transparent">
                   Into A Masterpiece
                 </span>
               </h1>
-              <p className="text-zinc-400 text-sm max-w-[280px] mx-auto leading-relaxed">
-                Trained on thousands of iconic builds to create premium 4K art of your vehicle.
+              <p className="text-zinc-400 text-xs md:text-lg max-w-[260px] md:max-w-2xl mx-auto leading-relaxed">
+                Turn your ride into a masterpiece, training thousands of iconic builds. <br className="hidden md:block" />
+                Create premium 4K art of your vehicle.
               </p>
             </div>
 
             {/* Premium Upload Zone */}
-            <label className="relative aspect-square max-w-[320px] mx-auto mb-12 rounded-[2.5rem] liquid-glass flex flex-col items-center justify-center p-8 transition-all duration-500 animate-breathing-glow cursor-pointer btn-press active:scale-[0.98]">
-              <input type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleFile} />
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6 animate-float">
+            <label 
+              htmlFor="file-upload"
+              className="relative aspect-square w-full max-w-[280px] md:max-w-[500px] mx-auto mb-10 md:mb-16 rounded-[2rem] md:rounded-[4rem] liquid-glass flex flex-col items-center justify-center p-6 md:p-12 transition-all duration-500 animate-breathing-glow cursor-pointer btn-press active:scale-[0.98]"
+            >
+              <input 
+                id="file-upload"
+                type="file" 
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                onChange={handleFile} 
+              />
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6 animate-float pointer-events-none">
                 <Upload size={32} className="text-white" />
               </div>
               
-              <h2 className="text-xl font-bold mb-2">Drop Your Ride</h2>
-              <p className="text-zinc-500 text-xs mb-8">or tap to browse your gallery</p>
+              <h2 className="text-xl font-bold mb-2 pointer-events-none">Drop Your Ride</h2>
+              <p className="text-zinc-500 text-xs mb-8 pointer-events-none">or tap to browse your gallery</p>
               
-              <div className="flex items-center gap-4 text-zinc-400">
+              <div className="flex items-center gap-4 text-zinc-400 pointer-events-none">
                 <div className="flex flex-col items-center gap-1">
                   <Smartphone size={16} />
                   <span className="text-[9px] font-medium">Phone</span>
@@ -1026,20 +1076,51 @@ const App: React.FC = () => {
             </label>
 
             {/* Showcase Section */}
-            <div className="space-y-6 mb-12">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Recent Masterpieces</h3>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-[10px] text-amber-500 font-medium">Swipe to Reveal</span>
-                </div>
+            <div className="space-y-4 md:space-y-6 mb-8 md:mb-12 relative group">
+              <div className="flex items-center justify-center px-2">
+                <h3 className="text-[10px] md:text-sm font-black uppercase tracking-[0.3em] text-amber-500/80">Explore The Gallery</h3>
               </div>
               
-              {/* Horizontal Scroll Carousel */}
-              <div className="flex gap-4 overflow-x-auto pb-4 px-2 snap-x snap-mandatory no-scrollbar">
+              {/* Navigation Arrows - Mobile: Top */}
+              <div className="flex md:hidden items-center justify-center gap-3 mb-4">
+                <button 
+                  onClick={() => scrollCarousel('left')}
+                  className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all active:scale-90 flex"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={() => scrollCarousel('right')}
+                  className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all active:scale-90 flex"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
+              {/* Desktop: Buttons outside container */}
+              <div className="hidden md:flex items-center gap-4 px-2">
+                <button 
+                  onClick={() => scrollCarousel('left')}
+                  className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all active:scale-90 flex flex-shrink-0 z-20 shadow-xl shadow-black/50"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                
+                <div className="relative flex-1 overflow-hidden rounded-[3rem]">
+                  {/* Left Gradient Cover */}
+                  <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-black via-black/40 to-transparent z-10 pointer-events-none" />
+                  
+                  {/* Right Gradient Cover */}
+                  <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-black via-black/40 to-transparent z-10 pointer-events-none" />
+
+                  {/* Horizontal Scroll Carousel */}
+                  <div 
+                    ref={carouselRef}
+                    className="flex gap-8 overflow-x-auto pb-4 pt-4 px-[calc(50%-250px)] snap-x snap-mandatory no-scrollbar scroll-smooth"
+                  >
                 {SHOWCASE_DATA.map((example) => (
-                  <div key={example.id} className="min-w-[280px] snap-center">
-                    <div className="relative aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl shadow-black/50">
+                  <div key={example.id} className="min-w-[300px] md:min-w-[500px] snap-center">
+                    <div className="relative aspect-[4/3] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-zinc-900 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] transform transition-transform duration-500 hover:scale-[1.02]">
                       <BeforeAfterSlider 
                         beforeImage={example.before} 
                         afterImage={example.after}
@@ -1047,37 +1128,52 @@ const App: React.FC = () => {
                         afterLabel="AI Art"
                         autoAnimate={true}
                       />
-                      
-                      {/* Info Overlay (Bottom) */}
-                      <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
-                        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-3 border border-white/5 shadow-xl">
-                          <div className="text-xs font-bold text-white mb-0.5">{example.name}</div>
-                          <div className="text-[9px] text-zinc-400 uppercase tracking-[0.1em] flex items-center gap-1">
-                            <Sparkles size={10} className="text-amber-500" />
-                            {example.scene}
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 ))}
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => scrollCarousel('right')}
+                  className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all active:scale-90 flex flex-shrink-0 z-20 shadow-xl shadow-black/50"
+                >
+                  <ChevronRight size={24} />
+                </button>
               </div>
-              
-              {/* Pagination Dots (Visual Only) */}
-              <div className="flex justify-center gap-1.5">
-                {SHOWCASE_DATA.map((_, idx) => (
-                  <div key={idx} className="w-1 h-1 rounded-full bg-zinc-800" />
+
+              {/* Mobile: Carousel container */}
+              <div className="relative md:hidden overflow-hidden">
+                {/* Left Gradient Cover */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black/60 to-transparent z-10 pointer-events-none" />
+                
+                {/* Right Gradient Cover */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black/60 to-transparent z-10 pointer-events-none" />
+
+                <div 
+                  ref={mobileCarouselRef}
+                  className="flex gap-4 overflow-x-auto pb-4 pt-2 px-[calc(50%-150px)] snap-x snap-mandatory no-scrollbar scroll-smooth"
+                >
+                {SHOWCASE_DATA.map((example) => (
+                  <div key={`mobile-${example.id}`} className="min-w-[300px] snap-center">
+                    <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl shadow-black/50">
+                      <BeforeAfterSlider 
+                        beforeImage={example.before} 
+                        afterImage={example.after}
+                        beforeLabel="Photo"
+                        afterLabel="AI Art"
+                        autoAnimate={true}
+                      />
+                    </div>
+                  </div>
                 ))}
+                </div>
               </div>
               
-              {/* Scroll Hint */}
-              <p className="text-center text-[10px] text-zinc-600 italic">
-                Slide the center line to compare • Swipe for more
-              </p>
             </div>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 py-8 border-t border-white/5">
+            <div className="grid grid-cols-3 gap-2 md:gap-4 py-6 md:py-8 border-t border-white/5">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center mb-2">
                   <Zap size={18} className="text-amber-500" />
@@ -1105,31 +1201,31 @@ const App: React.FC = () => {
 
         {/* ============ ANALYZING (with scan animation) ============ */}
         {step === Step.ANALYZING && imageBase64 && (
-          <div className="pt-4">
+          <div className="pt-4 animate-fade-slide-in">
             {/* Image with scan overlay */}
-            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-4 border-2 border-amber-500/30 animate-pulse-border scanner-corners scanner-corners-bottom">
+            <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden mb-8 border border-white/5 shadow-2xl scanner-corners">
               <img 
                 src={`data:image/jpeg;base64,${imageBase64}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover opacity-80"
                 alt="Your vehicle"
               />
               
               {/* Dark overlay */}
-              <div className="absolute inset-0 bg-black/40" />
+              <div className="absolute inset-0 bg-black/20" />
               
               {/* Scan line */}
-              <div className="absolute left-0 right-0 h-1 bg-gradient-to-b from-transparent via-amber-500/80 to-transparent animate-scan" style={{ top: '0%' }}>
-                <div className="absolute inset-x-0 h-20 bg-gradient-to-b from-amber-500/20 to-transparent" />
+              <div className="absolute left-0 right-0 h-1 bg-gradient-to-b from-transparent via-amber-500 to-transparent animate-scan" style={{ top: '0%' }}>
+                <div className="absolute inset-x-0 h-40 bg-gradient-to-b from-amber-500/20 to-transparent" />
               </div>
               
               {/* Scanning indicator */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Scan size={14} className="text-amber-500 animate-pulse" />
-                <span className="text-xs font-medium text-white/80">Scanning...</span>
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                <Scan size={16} className="text-amber-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Scanning Build</span>
               </div>
               
               {/* Progressive info reveals */}
-              <div className="absolute bottom-3 left-3 right-3 space-y-2">
+              <div className="absolute bottom-6 left-6 right-6 space-y-2">
                 {analysis && (
                   <>
                     <InfoPill visible={scanStep >= 1} delay={0}>
@@ -1139,7 +1235,7 @@ const App: React.FC = () => {
                       {analysis.year} • {analysis.color}
                     </InfoPill>
                     <InfoPill visible={scanStep >= 3} delay={200}>
-                      {analysis.isOffroad ? '4×4 Off-Road' : analysis.category}
+                      {analysis.isOffroad ? '4×4 Architecture' : analysis.category}
                     </InfoPill>
                     {analysis.installedAccessories && analysis.installedAccessories.length > 0 && (
                       <InfoPill visible={scanStep >= 4} delay={300}>
@@ -1152,117 +1248,106 @@ const App: React.FC = () => {
             </div>
             
             {!analysis && (
-              <div className="text-center">
-                <div className="w-8 h-8 mx-auto mb-3 rounded-full border-2 border-zinc-700 border-t-amber-500 animate-spin" />
-                <p className="text-zinc-500 text-sm">Analyzing your ride...</p>
+              <div className="text-center py-4">
+                <div className="w-10 h-10 mx-auto mb-4 rounded-full border-2 border-white/5 border-t-amber-500 animate-spin" />
+                <p className="text-zinc-500 text-sm font-medium tracking-tight">Deconstructing pixels...</p>
               </div>
             )}
           </div>
         )}
 
-        {/* ============ CUSTOMIZE WITH STEPPERS ============ */}
+        {/* ============ CUSTOMIZE ============ */}
         {step === Step.CUSTOMIZE && analysis && (
-          <div className="pt-2 animate-fade-slide-in">
-            
-            {/* ═══════════════ VEHICLE PREVIEW (Always visible at top) ═══════════════ */}
-            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 bg-zinc-900">
+          <div className="pt-4 animate-fade-slide-in">
+            {/* Minimal Car Preview */}
+            <div className="relative aspect-[16/10] rounded-3xl overflow-hidden mb-8 border border-white/5 shadow-2xl">
               <img 
                 src={`data:image/jpeg;base64,${imageBase64}`}
-                className="w-full h-full object-cover"
-                alt="Your vehicle"
+                className="w-full h-full object-cover opacity-60"
+                alt="Your car"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-              <div className="absolute bottom-3 left-3 right-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm font-semibold">{analysis.year} {analysis.make} {analysis.model}</span>
-                  {analysis.isOffroad && (
-                    <span className="text-[10px] bg-amber-500/30 text-amber-400 px-2 py-0.5 rounded-full font-medium">4×4</span>
-                  )}
-                </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
+              <div className="absolute bottom-4 left-6 text-left">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Detected Build</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">{analysis.year} {analysis.make} {analysis.model}</h2>
               </div>
             </div>
 
-            {/* ═══════════════ STEPPER PROGRESS BAR ═══════════════ */}
-            <div className="mb-5">
-              {/* Progress dots */}
-              <div className="flex items-center justify-center gap-2 mb-3">
-                {[
-                  { step: CustomizeStep.ANGLE, label: 'Angle', icon: Compass },
-                  { step: CustomizeStep.SCENE, label: 'Scene', icon: Image },
-                  { step: CustomizeStep.STYLE, label: 'Style', icon: Settings2 },
-                  { step: CustomizeStep.EXTRAS, label: 'Extras', icon: Wand2 },
-                ].map((item, index) => {
-                  const isActive = customizeStep === item.step;
-                  const isCompleted = customizeStep > item.step;
-                  const Icon = item.icon;
-                  return (
-                    <React.Fragment key={item.step}>
-                      <button
-                        onClick={() => setCustomizeStep(item.step)}
-                        className={`flex flex-col items-center transition-all ${
-                          isActive ? 'scale-110' : 'opacity-50 hover:opacity-80'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${
-                          isActive 
-                            ? 'bg-amber-500 text-black' 
-                            : isCompleted 
-                              ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50' 
-                              : 'bg-zinc-800 text-zinc-500'
-                        }`}>
-                          {isCompleted ? <Check size={14} strokeWidth={3} /> : <Icon size={14} />}
-                        </div>
-                        <span className={`text-[9px] font-medium ${
-                          isActive ? 'text-amber-500' : isCompleted ? 'text-green-400' : 'text-zinc-600'
-                        }`}>
-                          {item.label}
-                        </span>
-                      </button>
-                      {index < 3 && (
-                        <div className={`w-6 h-0.5 rounded-full mt-[-12px] ${
-                          customizeStep > item.step ? 'bg-green-500/50' : 'bg-zinc-800'
-                        }`} />
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-              
-              {/* Step indicator text */}
-              <p className="text-center text-[11px] text-zinc-600">
-                Step {customizeStep} of 4
-                {customizeStep === CustomizeStep.EXTRAS && <span className="text-zinc-700"> • optional</span>}
-              </p>
-            </div>
-
-            {/* ═══════════════ STEP CONTENT ═══════════════ */}
-            <div className="min-h-[200px]">
-              
-              {/* ─────────────── STEP 1: ANGLE ─────────────── */}
-              {customizeStep === CustomizeStep.ANGLE && (
-                <div className="animate-fade-slide-in">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold mb-1">Choose the Angle</h3>
-                    <p className="text-xs text-zinc-500">How should your car be shown?</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-3">
+            {/* Visual Stepper */}
+            <div className="flex justify-between items-center mb-10 px-2">
+              {[
+                { id: CustomizeStep.ANGLE, icon: Compass, label: 'Angle' },
+                { id: CustomizeStep.SCENE, icon: Image, label: 'Scene' },
+                { id: CustomizeStep.STYLE, icon: Settings2, label: 'Style' },
+                { id: CustomizeStep.EXTRAS, icon: Wand2, label: 'Extras' },
+              ].map((item, index) => {
+                const isActive = customizeStep === item.id;
+                const isCompleted = [CustomizeStep.ANGLE, CustomizeStep.SCENE, CustomizeStep.STYLE, CustomizeStep.EXTRAS].indexOf(customizeStep) > index;
+                const Icon = item.icon;
+                return (
+                  <React.Fragment key={item.id}>
                     <button
-                      onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
-                      className={`relative p-4 rounded-2xl transition-all text-left flex items-center gap-4 ${
-                        position === PositionMode.SIDE_PROFILE
-                          ? 'bg-zinc-800 ring-2 ring-amber-500'
-                          : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
+                      onClick={() => {
+                        haptic.light();
+                        setCustomizeStep(item.id);
+                      }}
+                      className={`flex flex-col items-center transition-all ${
+                        isActive ? 'scale-110' : 'opacity-40 hover:opacity-80'
                       }`}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        position === PositionMode.SIDE_PROFILE ? 'bg-amber-500/20' : 'bg-zinc-800'
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 transition-all duration-500 ${
+                        isActive 
+                          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30' 
+                          : isCompleted 
+                            ? 'bg-zinc-800 text-amber-500' 
+                            : 'bg-zinc-900 text-zinc-600'
                       }`}>
-                        <Aperture size={24} className={position === PositionMode.SIDE_PROFILE ? 'text-amber-500' : 'text-zinc-500'} />
+                        {isCompleted ? <Check size={18} strokeWidth={3} /> : <Icon size={18} />}
+                      </div>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                        isActive ? 'text-white' : 'text-zinc-600'
+                      }`}>
+                        {item.label}
+                      </span>
+                    </button>
+                    {index < 3 && (
+                      <div className={`flex-1 h-[2px] mx-2 mt-[-18px] transition-colors duration-500 ${
+                        [CustomizeStep.ANGLE, CustomizeStep.SCENE, CustomizeStep.STYLE, CustomizeStep.EXTRAS].indexOf(customizeStep) > index 
+                          ? 'bg-amber-500/30' 
+                          : 'bg-zinc-900'
+                      }`} />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* Content Container */}
+            <div className="liquid-glass rounded-[2.5rem] p-8 mb-10 min-h-[320px] flex flex-col justify-center">
+              {/* ─────────────── STEP 1: ANGLE ─────────────── */}
+              {customizeStep === CustomizeStep.ANGLE && (
+                <div className="animate-fade-slide-in text-left">
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold mb-2 tracking-tight text-white">Choose the Angle</h3>
+                    <p className="text-sm text-zinc-500">How should your car be shown?</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <button
+                      onClick={() => setPosition(PositionMode.SIDE_PROFILE)}
+                      className={`relative p-5 rounded-3xl transition-all text-left flex items-center gap-5 ${
+                        position === PositionMode.SIDE_PROFILE
+                          ? 'bg-zinc-800/80 ring-2 ring-amber-500 shadow-xl'
+                          : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                      }`}
+                    >
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${
+                        position === PositionMode.SIDE_PROFILE ? 'bg-amber-500 text-black' : 'bg-zinc-900 text-zinc-500'
+                      }`}>
+                        <Aperture size={28} />
                       </div>
                       <div className="flex-1">
-                        <span className="font-semibold text-base block mb-0.5">Side Profile</span>
+                        <span className="font-bold text-lg block mb-1">Side Profile</span>
                         <p className="text-xs text-zinc-500 leading-tight">
                           Classic poster look • Clean & balanced
                         </p>
@@ -1276,19 +1361,19 @@ const App: React.FC = () => {
                     
                     <button
                       onClick={() => setPosition(PositionMode.AS_PHOTOGRAPHED)}
-                      className={`relative p-4 rounded-2xl transition-all text-left flex items-center gap-4 ${
+                      className={`relative p-5 rounded-3xl transition-all text-left flex items-center gap-5 ${
                         position === PositionMode.AS_PHOTOGRAPHED
-                          ? 'bg-zinc-800 ring-2 ring-amber-500'
-                          : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
+                          ? 'bg-zinc-800/80 ring-2 ring-amber-500 shadow-xl'
+                          : 'bg-white/5 hover:bg-white/10 border border-white/5'
                       }`}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        position === PositionMode.AS_PHOTOGRAPHED ? 'bg-amber-500/20' : 'bg-zinc-800'
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${
+                        position === PositionMode.AS_PHOTOGRAPHED ? 'bg-amber-500 text-black' : 'bg-zinc-900 text-zinc-500'
                       }`}>
-                        <Camera size={24} className={position === PositionMode.AS_PHOTOGRAPHED ? 'text-amber-500' : 'text-zinc-500'} />
+                        <Camera size={28} />
                       </div>
                       <div className="flex-1">
-                        <span className="font-semibold text-base block mb-0.5">As Photographed</span>
+                        <span className="font-bold text-lg block mb-1">As Photographed</span>
                         <p className="text-xs text-zinc-500 leading-tight">
                           Keep your exact angle • Unique perspective
                         </p>
@@ -1305,96 +1390,137 @@ const App: React.FC = () => {
 
               {/* ─────────────── STEP 2: SCENE ─────────────── */}
               {customizeStep === CustomizeStep.SCENE && (
-                <div className="animate-fade-slide-in">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold mb-1">Pick a Scene</h3>
-                    <p className="text-xs text-zinc-500">Where should your car be?</p>
+                <div className="animate-fade-slide-in text-left">
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold mb-2 tracking-tight text-white">Pick a Scene</h3>
+                    <p className="text-sm text-zinc-500">Where should your car be?</p>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {SCENES.map((scene) => {
                       const isSelected = background === scene.id;
                       const Icon = scene.icon;
                       return (
                         <button
                           key={scene.id}
-                          onClick={() => setBackground(scene.id)}
-                          className={`relative aspect-square rounded-xl overflow-hidden transition-all ${
+                          onClick={() => {
+                            setBackground(scene.id);
+                            // Clear custom city when switching away from City
+                            if (scene.id !== BackgroundTheme.CITY) {
+                              setCustomCity('');
+                            }
+                          }}
+                          className={`relative aspect-square rounded-[1.5rem] overflow-hidden transition-all duration-300 ${
                             isSelected 
-                              ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-black scale-[1.02]' 
-                              : 'opacity-60 hover:opacity-100'
+                              ? 'ring-2 ring-amber-500 ring-offset-4 ring-offset-black scale-105 z-10 shadow-2xl shadow-amber-500/20' 
+                              : 'opacity-40 hover:opacity-100 hover:scale-105 bg-white/5'
                           }`}
                         >
                           <div className={`absolute inset-0 bg-gradient-to-br ${scene.gradient}`} />
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <Icon size={22} className="text-white/90 mb-1" />
-                            <span className="text-[10px] font-medium text-white/90 text-center px-1">{scene.name}</span>
+                            <Icon size={26} className="text-white mb-2" />
+                            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{scene.name}</span>
                           </div>
                           {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                              <Check size={12} className="text-black" strokeWidth={3} />
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
+                              <Check size={12} className="text-black" strokeWidth={4} />
                             </div>
                           )}
                         </button>
                       );
                     })}
                   </div>
+                  
+                  {/* Custom City Input - shown when City Skyline is selected */}
+                  {background === BackgroundTheme.CITY && (
+                    <div className="mt-6 animate-fade-slide-in">
+                      <label className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.2em] mb-3 block text-center">
+                        Which City?
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={customCity}
+                          onChange={(e) => setCustomCity(e.target.value)}
+                          placeholder="e.g. Tokyo, Dubai, New York..."
+                          className="w-full px-5 py-4 bg-zinc-900/80 border border-white/10 rounded-2xl text-white text-center placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                        />
+                        {customCity && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                              <Check size={12} className="text-amber-500" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-zinc-600 text-center mt-2">
+                        We'll create a skyline with famous landmarks from your city
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* ─────────────── STEP 3: STYLE ─────────────── */}
               {customizeStep === CustomizeStep.STYLE && (
-                <div className="animate-fade-slide-in">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold mb-1">Set the Style</h3>
-                    <p className="text-xs text-zinc-500">How clean or detailed?</p>
+                <div className="animate-fade-slide-in text-left">
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold mb-2 tracking-tight text-white">Set the Style</h3>
+                    <p className="text-sm text-zinc-500">How clean or detailed?</p>
                   </div>
                   
                   {/* Condition */}
-                  <div className="mb-5">
-                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Condition</label>
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="mb-8">
+                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.2em] mb-4 block text-center">Condition</label>
+                    <div className="grid grid-cols-3 gap-3">
                       {[
-                        { id: FidelityMode.EXACT_MATCH, label: 'As-is', desc: 'Every scratch, every story', emoji: '🛤️' },
-                        { id: FidelityMode.CLEAN_BUILD, label: 'Clean', desc: 'Fresh from the detailer', emoji: '✨' },
-                        { id: FidelityMode.FACTORY_FRESH, label: 'Stock', desc: 'Showroom new', emoji: '🏭' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => setFidelity(opt.id)}
-                          className={`p-3 rounded-xl text-center transition-all ${
-                            fidelity === opt.id
-                              ? 'bg-zinc-800 ring-2 ring-amber-500'
-                              : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
-                          }`}
-                        >
-                          <span className="text-lg mb-1 block">{opt.emoji}</span>
-                          <div className="text-sm font-semibold">{opt.label}</div>
-                          <div className="text-[9px] text-zinc-500 mt-0.5 leading-tight">{opt.desc}</div>
-                        </button>
-                      ))}
+                        { id: FidelityMode.EXACT_MATCH, label: 'As-is', desc: 'Real state', icon: CircleDot },
+                        { id: FidelityMode.CLEAN_BUILD, label: 'Clean', desc: 'Detailed', icon: Paintbrush },
+                        { id: FidelityMode.FACTORY_FRESH, label: 'Stock', desc: 'Showroom', icon: Car },
+                      ].map((opt) => {
+                        const Icon = opt.icon;
+                        const isSelected = fidelity === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => setFidelity(opt.id)}
+                            className={`p-4 rounded-3xl text-center transition-all ${
+                              isSelected
+                                ? 'bg-zinc-800/80 ring-2 ring-amber-500 shadow-xl'
+                                : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                            }`}
+                          >
+                            <Icon size={20} className={`mx-auto mb-2 ${isSelected ? 'text-amber-500' : 'text-zinc-600'}`} />
+                            <div className="text-sm font-bold text-white mb-0.5">{opt.label}</div>
+                            <div className="text-[9px] text-zinc-500 font-medium leading-tight">{opt.desc}</div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Stance - Simplified to 2 options */}
+                  {/* Stance */}
                   <div>
-                    <label className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Ride Height</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {getStanceOptions().map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => setStance(opt.id)}
-                          className={`p-4 rounded-xl text-center transition-all ${
-                            stance === opt.id
-                              ? 'bg-zinc-800 ring-2 ring-amber-500'
-                              : 'bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800'
-                          }`}
-                        >
-                          <span className="text-2xl mb-2 block">{opt.icon}</span>
-                          <div className="text-sm font-semibold">{opt.label}</div>
-                          <div className="text-[10px] text-zinc-500 mt-0.5">{opt.desc}</div>
-                        </button>
-                      ))}
+                    <label className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.2em] mb-4 block text-center">Ride Height</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {getStanceOptions().map((opt) => {
+                        const isSelected = stance === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => setStance(opt.id)}
+                            className={`p-5 rounded-3xl text-center transition-all flex flex-col items-center ${
+                              isSelected
+                                ? 'bg-zinc-800/80 ring-2 ring-amber-500 shadow-xl'
+                                : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                            }`}
+                          >
+                            <span className="text-3xl mb-3">{opt.icon}</span>
+                            <div className="text-base font-bold text-white mb-1">{opt.label}</div>
+                            <div className="text-[11px] text-zinc-500 font-medium leading-tight">{opt.desc}</div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1402,102 +1528,92 @@ const App: React.FC = () => {
 
               {/* ─────────────── STEP 4: EXTRAS (Optional) ─────────────── */}
               {customizeStep === CustomizeStep.EXTRAS && (
-                <div className="animate-fade-slide-in">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold mb-1">Dream Upgrades</h3>
-                    <p className="text-xs text-zinc-500">Add mods you've been dreaming about</p>
-                    <span className="inline-block mt-1 text-[10px] text-zinc-700 bg-zinc-900 px-2 py-0.5 rounded-full">Optional</span>
+                <div className="animate-fade-slide-in text-left">
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold mb-2 tracking-tight text-white">Dream Upgrades</h3>
+                    <p className="text-sm text-zinc-500 mb-2">Add mods you've been dreaming about</p>
+                    <span className="inline-block px-3 py-1 bg-zinc-900/80 rounded-full text-[10px] font-extrabold text-zinc-600 uppercase tracking-widest border border-white/5">Optional</span>
                   </div>
                   
                   {analysis.popularMods && analysis.popularMods.length > 0 ? (
-                    <>
-                      <div className="flex flex-wrap gap-2 justify-center">
+                    <div className="space-y-6">
+                      <div className="flex flex-wrap gap-2.5 justify-center">
                         {analysis.popularMods.slice(0, 6).map((mod) => {
                           const isSelected = selectedMods.includes(mod.name);
                           return (
                             <button
                               key={mod.id || mod.name}
                               onClick={() => toggleMod(mod.name)}
-                              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                              className={`px-5 py-3 rounded-2xl text-[11px] font-bold tracking-wider transition-all ${
                                 isSelected
-                                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30'
-                                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 scale-105'
+                                  : 'bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 border border-white/5'
                               }`}
                             >
-                              {isSelected && <span className="mr-1.5">✓</span>}
-                              {mod.name}
+                              {isSelected && <Check size={12} className="inline mr-2" strokeWidth={4} />}
+                              {mod.name.toUpperCase()}
                             </button>
                           );
                         })}
                       </div>
-                      {selectedMods.length > 0 && (
-                        <p className="text-center text-xs text-amber-500 mt-4">
-                          +{selectedMods.length} upgrade{selectedMods.length > 1 ? 's' : ''} will be added to your art
-                        </p>
-                      )}
-                      {selectedMods.length === 0 && (
-                        <p className="text-center text-xs text-zinc-600 mt-4">
-                          Tap any mod to add it, or skip to create art
-                        </p>
-                      )}
-                    </>
+                      <p className="text-center text-[11px] font-medium text-zinc-600 italic">
+                        {selectedMods.length > 0 
+                          ? `Ready to add ${selectedMods.length} unique detail${selectedMods.length > 1 ? 's' : ''}`
+                          : "Smart suggestions based on your model"}
+                      </p>
+                    </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <Wand2 size={32} className="mx-auto text-zinc-700 mb-2" />
-                      <p className="text-sm text-zinc-500">No popular mods found for this vehicle</p>
-                      <p className="text-xs text-zinc-600 mt-1">You can still create amazing art!</p>
+                    <div className="text-center py-8">
+                      <Wand2 size={40} className="mx-auto text-zinc-800 mb-4" />
+                      <p className="text-sm text-zinc-500">Scanning for compatible mods...</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* ═══════════════ NAVIGATION BUTTONS ═══════════════ */}
-            <div className="mt-6 space-y-3">
-              {customizeStep < CustomizeStep.EXTRAS ? (
-                <button 
-                  onClick={() => setCustomizeStep(customizeStep + 1)}
-                  className="w-full py-4 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
+            {/* Navigation Buttons */}
+            <div className="flex gap-4">
+              {customizeStep !== CustomizeStep.ANGLE && (
+                <button
+                  onClick={() => {
+                    haptic.light();
+                    if (customizeStep === CustomizeStep.SCENE) setCustomizeStep(CustomizeStep.ANGLE);
+                    else if (customizeStep === CustomizeStep.STYLE) setCustomizeStep(CustomizeStep.SCENE);
+                    else if (customizeStep === CustomizeStep.EXTRAS) setCustomizeStep(CustomizeStep.STYLE);
+                  }}
+                  className="w-20 h-16 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-all active:scale-90"
                 >
-                  Next
-                  <ChevronRight size={18} />
-                </button>
-              ) : (
-                <button 
-                  onClick={handleGenerate}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
-                >
-                  <Sparkles size={20} />
-                  Create Art
+                  <ChevronLeft size={24} />
                 </button>
               )}
               
-              {/* Back button or Skip */}
-              <div className="flex gap-3">
-                {customizeStep > CustomizeStep.ANGLE && (
-                  <button 
-                    onClick={() => setCustomizeStep(customizeStep - 1)}
-                    className="flex-1 py-3 text-zinc-500 hover:text-white font-medium rounded-xl flex items-center justify-center gap-1 transition-colors"
-                  >
-                    <ChevronLeft size={16} />
-                    Back
-                  </button>
+              <button
+                onClick={() => {
+                  haptic.light();
+                  if (customizeStep === CustomizeStep.ANGLE) setCustomizeStep(CustomizeStep.SCENE);
+                  else if (customizeStep === CustomizeStep.SCENE) setCustomizeStep(CustomizeStep.STYLE);
+                  else if (customizeStep === CustomizeStep.STYLE) setCustomizeStep(CustomizeStep.EXTRAS);
+                  else handleGenerate();
+                }}
+                className={`flex-1 h-16 rounded-3xl font-extrabold tracking-tight text-lg shadow-2xl transition-all btn-primary-press flex items-center justify-center gap-3 ${
+                  customizeStep === CustomizeStep.EXTRAS
+                    ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-orange-500/30'
+                    : 'bg-white text-black'
+                }`}
+              >
+                {customizeStep === CustomizeStep.EXTRAS ? (
+                  <>
+                    <Sparkles size={22} />
+                    CREATE ART
+                  </>
+                ) : (
+                  <>
+                    NEXT
+                    <ChevronRight size={22} />
+                  </>
                 )}
-                {customizeStep < CustomizeStep.EXTRAS && (
-                  <button 
-                    onClick={handleGenerate}
-                    className="flex-1 py-3 text-zinc-600 hover:text-zinc-400 text-sm font-medium rounded-xl flex items-center justify-center gap-1 transition-colors"
-                  >
-                    Skip to Create
-                    <Sparkles size={14} />
-                  </button>
-                )}
-              </div>
-              
-              {/* Price hint - hide in demo mode */}
-              {!isDemoMode && customizeStep === CustomizeStep.EXTRAS && (
-                <p className="text-center text-[11px] text-zinc-600">Free preview. $3.99 for 4K pack.</p>
-              )}
+              </button>
             </div>
           </div>
         )}
@@ -1520,47 +1636,55 @@ const App: React.FC = () => {
             
             {/* DEMO MODE: Before/After Slider */}
             {isDemoMode ? (
-              <>
+              <div className="space-y-6">
                 {/* Title */}
-                <div className="text-center mb-4">
-                  <h2 className="text-xl font-bold text-white">✨ Your art is ready</h2>
+                <div className="text-center mb-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 mb-4 animate-pulse">
+                    <Sparkles size={12} className="text-amber-500" />
+                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Generation Complete</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Your Art is Ready</h2>
                   <p className="text-sm text-zinc-500">
                     {analysis?.year} {analysis?.make} {analysis?.model}
                   </p>
                 </div>
                 
-                {/* Before/After Slider with auto-animation (or just art if no original) */}
-                <div className="mb-5">
-                  {imageBase64 ? (
+                {/* Before/After Slider */}
+                <div className="aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 shadow-2xl">
+                  {imageBase64 && previewArt ? (
                     <BeforeAfterSlider 
-                      beforeImage={imageBase64}
-                      afterImage={previewArt}
+                      beforeImage={`data:image/jpeg;base64,${imageBase64}`}
+                      afterImage={`data:image/png;base64,${previewArt}`}
                       beforeLabel="Original"
-                      afterLabel="Art"
+                      afterLabel="AI Masterpiece"
                       autoAnimate={true}
                     />
+                  ) : previewArt ? (
+                    <img 
+                      src={`data:image/png;base64,${previewArt}`}
+                      className="w-full h-full object-contain"
+                      alt="Your artwork"
+                    />
                   ) : (
-                    <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-black">
-                      <img 
-                        src={`data:image/png;base64,${previewArt}`}
-                        className="w-full h-full object-contain"
-                        alt="Your artwork"
-                      />
+                    <div className="w-full h-full flex items-center justify-center text-zinc-500">
+                      No image data available
                     </div>
                   )}
                 </div>
                 
-                {/* Save to Gallery Button (Demo Mode - uses Web Share API for iOS) */}
+                {/* Save Button - Different text for mobile vs desktop */}
                 <button 
                   onClick={async () => {
                     if (!previewArt || !analysis) return;
+                    haptic.success();
                     
-                    // Get correct mimeType
                     const mimeType = (window as any).__lastArtMimeType || 'image/png';
                     const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
                     const fileName = `GarageCanvas-${analysis.make}-${analysis.model}.${extension}`;
                     
-                    // Convert base64 to blob
+                    // Check if mobile (touch device)
+                    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                    
                     const byteCharacters = atob(previewArt);
                     const byteNumbers = new Array(byteCharacters.length);
                     for (let i = 0; i < byteCharacters.length; i++) {
@@ -1570,8 +1694,8 @@ const App: React.FC = () => {
                     const blob = new Blob([byteArray], { type: mimeType });
                     const file = new File([blob], fileName, { type: mimeType });
                     
-                    // Try Web Share API first (iOS can save to gallery from here)
-                    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                    // On mobile only, try native share (save to gallery)
+                    if (isMobile && navigator.share && navigator.canShare?.({ files: [file] })) {
                       try {
                         await navigator.share({
                           files: [file],
@@ -1579,80 +1703,86 @@ const App: React.FC = () => {
                         });
                         return;
                       } catch (err) {
-                        // User cancelled or share failed, fall back to download
                         console.log('Share cancelled, falling back to download');
                       }
                     }
                     
-                    // Fallback: regular download
+                    // On desktop (or if share fails), download using blob URL
+                    const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    link.href = `data:${mimeType};base64,${previewArt}`;
+                    link.href = url;
                     link.download = fileName;
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
                   }}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 btn-primary-press active:scale-95"
+                  className="w-full h-16 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white font-extrabold text-lg rounded-3xl flex items-center justify-center gap-3 shadow-2xl shadow-orange-500/30 btn-primary-press active:scale-95"
                 >
-                  <Download size={20} />
-                  Save to Gallery
+                  <Download size={24} />
+                  <span className="md:hidden">SAVE TO GALLERY</span>
+                  <span className="hidden md:inline">SAVE PHOTO</span>
                 </button>
                 
                 {/* Create Another */}
                 <button 
                   onClick={startNew}
-                  className="w-full py-3 mt-3 text-zinc-500 hover:text-white transition-colors text-sm flex items-center justify-center gap-2"
+                  className="w-full py-4 text-zinc-600 hover:text-zinc-400 font-bold uppercase tracking-[0.2em] text-[10px] transition-colors flex items-center justify-center gap-2"
                 >
                   <RefreshCw size={14} />
                   Create Another
                 </button>
-              </>
+              </div>
             ) : (
               /* NORMAL MODE: Blurred preview with paywall */
-              <>
+              <div className="space-y-6">
                 {/* Preview Image - Blurred */}
-                <div className="relative aspect-[9/16] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
+                <div className="relative aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 shadow-2xl">
                   <img 
                     src={`data:image/png;base64,${previewArt}`}
-                    className="w-full h-full object-contain blur-[5px] opacity-80"
+                    className="w-full h-full object-contain blur-[12px] opacity-60 scale-105"
                     alt="Preview"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-black/40 backdrop-blur flex items-center justify-center border border-white/10">
-                        <svg className="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <div className="text-center animate-float">
+                      <div className="w-20 h-20 mx-auto mb-4 rounded-[2rem] bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-2xl">
+                        <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                       </div>
-                      <p className="text-white/60 text-sm font-medium">Preview</p>
+                      <span className="text-white font-bold tracking-[0.3em] uppercase text-[10px]">Premium Preview</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Pricing Card */}
-                <div className="bg-zinc-900 rounded-2xl p-5 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                        <Package size={20} className="text-white" />
+                {/* Pricing Card - Liquid Glass */}
+                <div className="liquid-glass rounded-[2.5rem] p-8">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                        <Package size={24} className="text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold">4K Premium Pack</h3>
-                        <p className="text-xs text-zinc-500">All 3 formats in ZIP</p>
+                        <h3 className="font-extrabold text-lg text-white tracking-tight">4K Masterpiece Pack</h3>
+                        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest text-left">Phone + Desktop + Print</p>
                       </div>
                     </div>
-                    <span className="text-2xl font-bold text-white">$3.99</span>
+                    <div className="text-right">
+                      <span className="text-3xl font-black text-white">$3.99</span>
+                    </div>
                   </div>
                   
-                  <div className="flex gap-2 mb-5">
+                  <div className="grid grid-cols-3 gap-3 mb-8">
                     {[
-                      { icon: Smartphone, label: 'Phone', ratio: '9:16' },
+                      { icon: Smartphone, label: 'Phone', ratio: '9:20' },
                       { icon: Monitor, label: 'Desktop', ratio: '16:9' },
                       { icon: Printer, label: 'Print', ratio: '4:3' },
                     ].map((fmt) => (
-                      <div key={fmt.label} className="flex-1 bg-zinc-800 rounded-xl p-2.5 text-center">
-                        <fmt.icon size={16} className="mx-auto mb-1 text-zinc-500" />
-                        <span className="text-[10px] text-zinc-400 block">{fmt.label}</span>
-                        <span className="text-[9px] text-amber-500 font-medium">4K</span>
+                      <div key={fmt.label} className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+                        <fmt.icon size={20} className="mx-auto mb-2 text-amber-500" />
+                        <span className="text-[9px] font-bold text-zinc-400 block uppercase tracking-tighter">{fmt.label}</span>
+                        <span className="text-[10px] font-black text-white">4K</span>
                       </div>
                     ))}
                   </div>
@@ -1660,55 +1790,58 @@ const App: React.FC = () => {
                   <button 
                     onClick={handlePurchase}
                     disabled={isProcessingPayment}
-                    className="w-full py-4 bg-white text-black font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed btn-press active:scale-95 active:bg-zinc-200"
+                    className="w-full h-16 bg-white text-black font-extrabold text-lg rounded-3xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed btn-press active:scale-95 active:bg-zinc-200 shadow-2xl shadow-white/10"
                   >
                     {isProcessingPayment ? (
-                      <div className="w-5 h-5 border-2 border-zinc-300 border-t-black rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-zinc-400 border-t-black rounded-full animate-spin" />
                     ) : (
                       <>
-                        <Download size={18} />
-                        Unlock Downloads
+                        <Download size={24} />
+                        UNLOCK 4K PACK
                       </>
                     )}
                   </button>
                   
-                  {/* DEV MODE BUTTONS */}
-                  {isDevMode && (
-                    <div className="space-y-2 mt-2">
-                  <button 
-                    onClick={() => {
-                      if (!previewArt || !analysis) return;
-                      // Get correct mimeType (stored during generation)
-                      const mimeType = (window as any).__lastArtMimeType || 'image/png';
-                      const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
-                      const link = document.createElement('a');
-                      link.href = `data:${mimeType};base64,${previewArt}`;
-                      link.download = `GarageCanvas-${analysis.make}-${analysis.model}-Phone.${extension}`;
-                      link.click();
-                    }}
-                    className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    📱 DEV: Download Phone Only
-                  </button>
-                      <button 
-                        onClick={handleDevUnlock}
-                        disabled={isProcessingPayment}
-                        className="w-full py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        🔓 DEV: Generate All Formats
-                      </button>
-                    </div>
-                  )}
+                  <p className="text-center text-[10px] text-zinc-600 mt-6 font-medium">
+                    Secured by Stripe • Instant Access
+                  </p>
                 </div>
+                
+                {/* DEV MODE BUTTONS */}
+                {isDevMode && (
+                  <div className="space-y-3 pt-4 border-t border-white/5">
+                    <button 
+                      onClick={() => {
+                        if (!previewArt || !analysis) return;
+                        const mimeType = (window as any).__lastArtMimeType || 'image/png';
+                        const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+                        const link = document.createElement('a');
+                        link.href = `data:${mimeType};base64,${previewArt}`;
+                        link.download = `GarageCanvas-${analysis.make}-${analysis.model}-Phone.${extension}`;
+                        link.click();
+                      }}
+                      className="w-full py-4 bg-zinc-800 text-white font-bold rounded-2xl hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                    >
+                      📱 DEV: Download Phone Only
+                    </button>
+                    <button 
+                      onClick={handleDevUnlock}
+                      className="w-full py-4 bg-amber-500/10 border border-amber-500/30 text-amber-500 font-bold rounded-2xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                    >
+                      🔓 DEV: Skip Payment
+                    </button>
+                  </div>
+                )}
 
-                {/* Adjust Button */}
+                {/* Adjust Settings */}
                 <button 
                   onClick={() => { setPreviewArt(null); setStep(Step.CUSTOMIZE); }}
-                  className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
+                  className="w-full py-4 text-zinc-500 hover:text-zinc-300 font-bold uppercase tracking-[0.2em] text-[10px] transition-colors flex items-center justify-center gap-2"
                 >
-                  ← Try different settings
+                  <RefreshCw size={14} />
+                  Adjust Settings
                 </button>
-              </>
+              </div>
             )}
           </div>
         )}
@@ -1716,15 +1849,24 @@ const App: React.FC = () => {
         {/* ============ COMPLETE ============ */}
         {step === Step.COMPLETE && hasPaid && artSet && (
           <div className="pt-4 animate-fade-slide-in">
+            {/* Success Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
+                <Check size={32} className="text-green-500" />
+              </div>
+              <h2 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">Complete Pack Ready</h2>
+              <p className="text-sm text-zinc-500">Your 4K automotive art is waiting</p>
+            </div>
+
             {/* Success Image */}
-            <div className="relative aspect-[9/16] rounded-2xl overflow-hidden mb-5 bg-zinc-900">
+            <div className="relative aspect-[3/4] rounded-[2.5rem] overflow-hidden mb-8 bg-zinc-950 border border-white/5 shadow-2xl">
               <img 
                 src={`data:image/png;base64,${artSet.phone}`}
                 className="w-full h-full object-contain"
                 alt="Your artwork"
               />
-              <div className="absolute top-3 right-3 bg-green-500 text-black text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                <Check size={12} />
+              <div className="absolute top-6 right-6 bg-green-500 text-black text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
+                <Check size={14} strokeWidth={4} />
                 UNLOCKED
               </div>
             </div>
@@ -1733,48 +1875,52 @@ const App: React.FC = () => {
             <button 
               onClick={handleDownloadZip}
               disabled={isDownloading}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl flex items-center justify-center gap-3 mb-4 disabled:opacity-50 btn-primary-press active:scale-95"
+              className="w-full h-16 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white font-extrabold text-lg rounded-3xl flex items-center justify-center gap-3 mb-6 disabled:opacity-50 btn-primary-press active:scale-95 shadow-2xl shadow-orange-500/30"
             >
               {isDownloading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <FolderArchive size={20} />
-                  Download All (ZIP)
+                  <FolderArchive size={24} />
+                  DOWNLOAD ALL (ZIP)
                 </>
               )}
             </button>
 
-            {/* Individual Downloads */}
-            <div className="space-y-2 mb-5">
-              <p className="text-xs text-zinc-600 text-center mb-2">or download individually</p>
-              {[
-                { key: 'phone', icon: Smartphone, label: 'Phone', ratio: '9:16' },
-                { key: 'desktop', icon: Monitor, label: 'Desktop', ratio: '16:9' },
-                { key: 'print', icon: Printer, label: 'Print', ratio: '4:3' },
-              ].map((fmt) => (
-                <button 
-                  key={fmt.key}
-                  onClick={() => handleDownload(fmt.key as 'phone' | 'desktop' | 'print')}
-                  className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-colors flex items-center justify-between px-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <fmt.icon size={16} className="text-zinc-500" />
-                    <span className="text-sm">{fmt.label}</span>
-                    <span className="text-[9px] text-zinc-600">{fmt.ratio}</span>
-                  </div>
-                  <Download size={14} className="text-zinc-600" />
-                </button>
-              ))}
+            {/* Individual Downloads in Liquid Glass */}
+            <div className="liquid-glass rounded-[2rem] p-6 mb-8">
+              <p className="text-[10px] font-extrabold text-zinc-500 text-center mb-4 uppercase tracking-[0.2em]">Individual Formats</p>
+              <div className="space-y-3">
+                {[
+                  { key: 'phone', icon: Smartphone, label: 'Phone Wallpaper', ratio: '9:20' },
+                  { key: 'desktop', icon: Monitor, label: 'Desktop Background', ratio: '16:9' },
+                  { key: 'print', icon: Printer, label: 'Print-Ready Art', ratio: '4:3' },
+                ].map((fmt) => (
+                  <button 
+                    key={fmt.key}
+                    onClick={() => handleDownload(fmt.key as 'phone' | 'desktop' | 'print')}
+                    className="w-full h-14 bg-white/5 hover:bg-white/10 rounded-2xl transition-all flex items-center justify-between px-5 border border-white/5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <fmt.icon size={18} className="text-amber-500" />
+                      <div className="text-left">
+                        <span className="text-sm font-bold block">{fmt.label}</span>
+                        <span className="text-[9px] text-zinc-500 font-bold">{fmt.ratio} • 4K</span>
+                      </div>
+                    </div>
+                    <Download size={16} className="text-zinc-500" />
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* New Button */}
             <button 
               onClick={startNew}
-              className="w-full py-3 border border-zinc-800 hover:border-zinc-700 rounded-xl transition-colors flex items-center justify-center gap-2 text-zinc-500 hover:text-white"
+              className="w-full h-14 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-500 hover:text-white font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
               <RefreshCw size={16} />
-              Create Another
+              Create Another Masterpiece
             </button>
           </div>
         )}

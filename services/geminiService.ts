@@ -5,6 +5,9 @@
  * All AI prompts and logic are hidden server-side in /api/*.ts
  * 
  * The user's browser NEVER sees the actual prompts.
+ * 
+ * ⚠️ IMPORTANT: Run with `vercel dev` for local development.
+ * The `npm run dev` command will NOT work as it doesn't support serverless functions.
  */
 
 import { VehicleAnalysis, BackgroundTheme, FidelityMode, PositionMode, StanceStyle } from "../types";
@@ -21,59 +24,89 @@ const MAX_PAYLOAD_SIZE_BYTES = 3 * 1024 * 1024; // 3MB max to stay safe under 4.
 /**
  * Compress and resize image to fit within Vercel's payload limits
  * Uses iterative compression if needed
+ * Handles HEIC/HEIF files from iPhone
  */
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     
+    // Set timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      reject(new Error('Image loading timed out'));
+    }, 30000); // 30 second timeout
+    
     img.onload = () => {
-      let { width, height } = img;
+      clearTimeout(timeout);
       
-      // Calculate new dimensions - always resize to max dimension
-      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-        const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
+      try {
+        let { width, height } = img;
+        console.log(`Original image size: ${width}x${height}`);
+        
+        // Calculate new dimensions - always resize to max dimension
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+          console.log(`Resizing to: ${width}x${height}`);
+        }
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Start with good quality and reduce if needed
+        let quality = 0.75;
+        let base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+        
+        // Iteratively reduce quality if still too large
+        while (base64Data.length > MAX_PAYLOAD_SIZE_BYTES && quality > 0.3) {
+          quality -= 0.1;
+          base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+          console.log(`Compressing: quality=${quality.toFixed(1)}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
+        }
+        
+        // If still too large, reduce dimensions further
+        if (base64Data.length > MAX_PAYLOAD_SIZE_BYTES) {
+          const smallerRatio = 0.7;
+          canvas.width = Math.round(width * smallerRatio);
+          canvas.height = Math.round(height * smallerRatio);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+          console.log(`Final resize: ${canvas.width}x${canvas.height}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
+        }
+        
+        console.log(`Image compressed successfully, final size: ${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
+        resolve(base64Data);
+      } catch (err) {
+        reject(err);
       }
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = width;
-      canvas.height = height;
-      ctx?.drawImage(img, 0, 0, width, height);
-      
-      // Start with good quality and reduce if needed
-      let quality = 0.75;
-      let base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
-      
-      // Iteratively reduce quality if still too large
-      while (base64Data.length > MAX_PAYLOAD_SIZE_BYTES && quality > 0.3) {
-        quality -= 0.1;
-        base64Data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
-        console.log(`Compressing: quality=${quality.toFixed(1)}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
-      }
-      
-      // If still too large, reduce dimensions further
-      if (base64Data.length > MAX_PAYLOAD_SIZE_BYTES) {
-        const smallerRatio = 0.7;
-        canvas.width = Math.round(width * smallerRatio);
-        canvas.height = Math.round(height * smallerRatio);
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
-        console.log(`Final resize: ${canvas.width}x${canvas.height}, size=${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
-      }
-      
-      resolve(base64Data);
     };
     
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = (e) => {
+      clearTimeout(timeout);
+      console.error('Image load error:', e);
+      reject(new Error('Failed to load image. Try a different format (JPG or PNG).'));
+    };
     
     // Read the file as data URL
     const reader = new FileReader();
     reader.onloadend = () => {
-      img.src = reader.result as string;
+      const dataUrl = reader.result as string;
+      console.log(`FileReader complete, data URL length: ${dataUrl.length}`);
+      img.src = dataUrl;
     };
-    reader.onerror = reject;
+    reader.onerror = (e) => {
+      clearTimeout(timeout);
+      console.error('FileReader error:', e);
+      reject(new Error('Failed to read file'));
+    };
     reader.readAsDataURL(file);
   });
 };
@@ -137,7 +170,8 @@ export const generateArt = async (
   fidelity: FidelityMode,
   position: PositionMode,
   stance: StanceStyle,
-  selectedMods: string[]
+  selectedMods: string[],
+  customCity?: string
 ): Promise<string> => {
   const response = await fetch('/api/generate-art', {
     method: 'POST',
@@ -150,7 +184,8 @@ export const generateArt = async (
       fidelity,
       position,
       stance,
-      selectedMods
+      selectedMods,
+      customCity
     })
   });
 
@@ -194,7 +229,8 @@ export const generateRemainingFormats = async (
   position: PositionMode,
   stance: StanceStyle,
   selectedMods: string[],
-  onProgress?: (step: string) => void
+  onProgress?: (step: string) => void,
+  customCity?: string
 ): Promise<GeneratedArtSet> => {
   onProgress?.("Creating Desktop and Print versions...");
   
@@ -210,7 +246,8 @@ export const generateRemainingFormats = async (
       fidelity,
       position,
       stance,
-      selectedMods
+      selectedMods,
+      customCity
     })
   });
 
@@ -240,18 +277,19 @@ export const generateArtSet = async (
   position: PositionMode,
   stance: StanceStyle,
   selectedMods: string[],
-  onProgress?: (step: string) => void
+  onProgress?: (step: string) => void,
+  customCity?: string
 ): Promise<GeneratedArtSet> => {
   // Step 1: Generate phone preview
   onProgress?.("Creating Phone wallpaper (1/3)...");
   const phoneArt = await generateArt(
-    base64Image, analysis, style, background, fidelity, position, stance, selectedMods
+    base64Image, analysis, style, background, fidelity, position, stance, selectedMods, customCity
   );
   
   // Step 2: Generate remaining formats using phone as reference
   onProgress?.("Creating Desktop and Print (2/3, 3/3)...");
   const fullSet = await generateRemainingFormats(
-    base64Image, phoneArt, analysis, style, background, fidelity, position, stance, selectedMods
+    base64Image, phoneArt, analysis, style, background, fidelity, position, stance, selectedMods, onProgress, customCity
   );
   
   return fullSet;

@@ -48,7 +48,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fidelity, 
       position, 
       stance, 
-      selectedMods 
+      selectedMods,
+      customCity 
     } = req.body;
 
     if (!image || !previewArt || !analysis) {
@@ -67,7 +68,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       position: position || 'As Photographed',
       stance: stance || 'Stock',
       selectedMods: selectedMods || [],
-      popularWheelName: analysis.popularWheels?.[0]?.name
+      popularWheelName: analysis.popularWheels?.[0]?.name,
+      customCity: customCity || undefined
     });
 
     // Helper to generate with reference image

@@ -49,9 +49,8 @@ export enum PositionMode {
 
 export enum StanceStyle {
   STOCK = 'Stock',
-  LIFTED = 'Lifted + AT',
-  STEELIES = 'Steelies + Mud',
-  LOWERED = 'Lowered + Wheels',
+  LIFTED = 'Lifted',
+  LOWERED = 'Lowered',
 }
 
 // ============================================================================
@@ -159,13 +158,48 @@ Act as an Expert Automotive Analyst and Car Culture Specialist. Analyze this veh
 
 8. **Character Marks:** Unique identifiers: stickers, decals, brand logos, mud splashes, dirt patterns, scratches.
 
-9. **Popular Modifications:** Use Google Search to find what enthusiasts commonly do to customize this specific make/model. List 4-5 popular mods.
+9. **Popular EXTERNAL Modifications:** Use Google Search to find the most popular VISUAL/EXTERIOR modifications that enthusiasts install on this specific make/model.
+   
+   ONLY include modifications that would be VISIBLE in artwork:
+   
+   For Off-Road/Overland vehicles:
+   - Lift kits, leveling kits
+   - All-terrain or mud-terrain tires (33", 35")
+   - Steel wheels (steelies), beadlock wheels
+   - Roof racks, roof baskets, roof tents
+   - Light bars, auxiliary lights, LED pods
+   - Bull bars, bumper guards, winch bumpers
+   - Snorkels, fender flares
+   - Recovery boards, jerry cans mounted outside
+   
+   For Sports/Performance vehicles:
+   - Lowering springs, coilovers
+   - Aftermarket wheels (specific brands popular for this model)
+   - Body kits, front splitters, rear spoilers
+   - Tinted windows
+   - Carbon fiber accents, hood scoops
+   - Wide body kits
+   
+   For Luxury/Everyday vehicles:
+   - Wheel upgrades
+   - Window tinting
+   - Roof bars, cargo boxes
+   - Chrome delete, blacked-out trim
+   
+   DO NOT include:
+   - Engine/performance chips or tunes
+   - Audio systems or speakers
+   - Interior modifications (seats, steering wheels, gauges)
+   - Anything not visible from outside the vehicle
+   
+   List 4-5 popular VISUAL mods with id, name, and description.
 
 10. **Popular Wheels:** Use Google Search to find the most popular aftermarket wheel brands/styles that enthusiasts put on this specific make/model. List 2-3 popular wheel options with brand and style.
 
 11. **Suggested Stance:** Based on the vehicle category:
-    - For Off-Road vehicles: suggest "Stock", "Lifted + AT", or "Steelies + Mud"
-    - For other vehicles: suggest "Stock" or "Lowered + Wheels"
+    - For Off-Road vehicles: suggest "Stock" or "Lifted"
+    - For Sports/Performance vehicles: suggest "Stock" or "Lowered"
+    - For other vehicles: suggest "Stock"
 
 12. **Suggested Background:** Based on the vehicle type, suggest the best background theme.
 
@@ -265,7 +299,7 @@ export const ANALYZE_VEHICLE_SCHEMA = {
     },
     suggestedStance: {
       type: "STRING" as const,
-      enum: ["Stock", "Lifted + AT", "Steelies + Mud", "Lowered + Wheels"],
+      enum: ["Stock", "Lifted", "Lowered"],
     },
     suggestedBackground: {
       type: "STRING" as const,
@@ -292,10 +326,9 @@ const BACKGROUND_PROMPTS: Record<string, string> = {
 };
 
 const STANCE_PROMPTS: Record<string, string> = {
-  'Stock': "Keep EXACT wheel design, tire size, and suspension height from source.",
-  'Lifted + AT': "Add 2-3 inch lift with aggressive AT tires. Increase tire sidewall.",
-  'Steelies + Mud': "Black steel wheels (steelies) with 33-inch mud-terrain tires. 2-inch lift.",
-  'Lowered + Wheels': "Lower 1-2 inches, sportier stance. Add aftermarket wheels with low profile tires.",
+  'Stock': "Keep EXACT suspension height, wheel design, and tire size from source. No changes to stance.",
+  'Lifted': "Add 2-3 inch suspension lift. Keep EXACT wheel design and style from source photo. Only change ride height.",
+  'Lowered': "Lower suspension 1-2 inches for sportier stance. Keep EXACT wheel design and style from source photo. Only change ride height.",
 };
 
 const FIDELITY_PROMPTS: Record<string, string> = {
@@ -313,20 +346,42 @@ export interface GenerateArtParams {
   stance: string;
   selectedMods: string[];
   popularWheelName?: string;
+  customCity?: string; // Custom city name for City Skyline background
 }
 
 export function buildBasePrompt(params: GenerateArtParams): string {
-  const { analysis, style, background, fidelity, position, stance, selectedMods, popularWheelName } = params;
+  const { analysis, style, background, fidelity, position, stance, selectedMods, popularWheelName, customCity } = params;
   
   // Position instructions
   const positionInstructions = position === 'As Photographed'
     ? `Keep the EXACT same angle and perspective as the source photo. Preserve orientation: ${analysis.orientation}, facing ${analysis.facingDirection}.`
-    : `Convert to a CLEAN SIDE PROFILE view (90-degree lateral). Facing ${analysis.facingDirection}.`;
+    : `
+═══════════════════════════════════════════════════════════
+🎯 SIDE PROFILE - PERFECT 90° LATERAL VIEW
+═══════════════════════════════════════════════════════════
+Create a TRUE SIDE PROFILE illustration of the vehicle:
+- Camera positioned EXACTLY 90 degrees perpendicular to the vehicle's side
+- FULL LATERAL VIEW showing the complete side from front bumper to rear bumper
+- NO 3/4 angle, NO perspective distortion - PURE side profile
+- Vehicle appears as a classic automotive illustration side view
+- All wheels visible and aligned (no depth/perspective)
+- Think: technical illustration or poster art side elevation
+- Vehicle facing: ${analysis.facingDirection}
 
-  // Stance with dynamic wheel info
-  let stancePrompt = STANCE_PROMPTS[stance] || STANCE_PROMPTS['Stock'];
-  if (stance === 'Lowered + Wheels' && popularWheelName) {
-    stancePrompt = `Lower 1-2 inches, sportier stance. Add ${popularWheelName} with low profile tires.`;
+DO NOT:
+✗ Add any front or rear angle
+✗ Show depth or perspective  
+✗ Create a 3/4 view
+═══════════════════════════════════════════════════════════
+`;
+
+  // Stance - only controls suspension height, not wheels
+  const stancePrompt = STANCE_PROMPTS[stance] || STANCE_PROMPTS['Stock'];
+  
+  // Background with custom city support
+  let backgroundPrompt = BACKGROUND_PROMPTS[background] || BACKGROUND_PROMPTS['Mountain Peaks'];
+  if (background === 'City Skyline' && customCity) {
+    backgroundPrompt = `Minimalist skyline silhouette of ${customCity} featuring its most iconic landmarks and buildings (use Google Search to find famous landmarks of ${customCity}). Cool blue-gray tones. Urban asphalt street in foreground.`;
   }
 
   // Accessories
@@ -361,7 +416,7 @@ ${wheelAudit.hasCenterCaps
 **POSITION:** ${positionInstructions}
 **CONDITION:** ${FIDELITY_PROMPTS[fidelity] || FIDELITY_PROMPTS['Clean Build']}
 **STANCE:** ${stancePrompt}
-**SCENE:** ${BACKGROUND_PROMPTS[background] || BACKGROUND_PROMPTS['Mountain Peaks']}
+**SCENE:** ${backgroundPrompt}
 ${accessories}
 ${mods}
 ${wheelInstructions}
